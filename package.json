@@ -14,10 +14,19 @@
   ],
   "main": "./extension.js",
   "contributes": {
+    "menus": {
+      "explorer/context": [
+        {
+          "command": "gumtree-diff.diff",
+          "title": "Show GumTree diff",
+          "when": "listDoubleSelection"
+        }
+      ]
+    },
     "commands": [
       {
-        "command": "gumtree-diff.helloWorld",
-        "title": "Hello World"
+        "command": "gumtree-diff.diff",
+        "title": "Show GumTree diff"
       }
     ]
   },
