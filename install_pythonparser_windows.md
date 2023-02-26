@@ -19,7 +19,7 @@ And edit **grammar.py**:
 
 ![image](https://user-images.githubusercontent.com/58233425/221403235-600878a0-aca6-4c6b-8457-b36889169bc6.png)
 
-(input the path to pythonparser)
+(replace the file path argument with the path to pythonparser in your system)
 
 Now create a dir called **python**, and copy all grammar*.txt files from **parso/python** into it:
 ![image](https://user-images.githubusercontent.com/58233425/221403251-1d273959-173d-477f-ad2d-0c8ecfa48df7.png)
