@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <annotationProcessing>
+      <profile name="Gradle Imported" enabled="true">
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$USER_HOME$/.gradle/caches/modules-2/files-2.1/org.atteo.classindex/classindex/3.10/8cc8e54208c07c75d5e190b46125e3879059f6f4/classindex-3.10.jar" />
+        </processorPath>
+        <module name="gumtree.client.diff.main" />
+        <module name="gumtree.gen.antlr3-json.main" />
+        <module name="gumtree.client.main" />
+        <module name="gumtree.gen.antlr3.main" />
+        <module name="gumtree.gen.c.main" />
+        <module name="gumtree.gen.antlr3-antlr.main" />
+        <module name="gumtree.gen.javaparser.main" />
+        <module name="gumtree.core.main" />
+        <module name="gumtree.gen.python.main" />
+        <module name="gumtree.dist.main" />
+        <module name="gumtree.gen.js.main" />
+        <module name="gumtree.gen.antlr3-xml.main" />
+        <module name="gumtree.gen.srcml.main" />
+        <module name="gumtree.benchmark.main" />
+        <module name="gumtree.gen.antlr3-php.main" />
+        <module name="gumtree.gen.treesitter.main" />
+        <module name="gumtree.gen.jdt.main" />
+        <module name="gumtree.gen.antlr4.main" />
+        <module name="gumtree.gen.css.main" />
+        <module name="gumtree.gen.ruby.main" />
+        <module name="gumtree.gen.antlr3-r.main" />
+        <module name="gumtree.gen.js-acorn.main" />
+      </profile>
+    </annotationProcessing>
+    <bytecodeTargetLevel target="11" />
+  </component>
+</project>

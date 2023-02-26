@@ -1,0 +1,4 @@
+dependencies {
+    implementation project(path: ':gen.python')
+}
+description = 'GumTree abstract client module.'
