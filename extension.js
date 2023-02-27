@@ -14,15 +14,22 @@ function activate(context) {
 	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "gumtree-diff" is now active!');
 
+	let source_uri = null;
+
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('gumtree-diff.diff', function () {
-		// The code you place here will be executed every time your command is executed
+	let disposable = vscode.commands.registerCommand('gumtree-diff.source_select', function (uri) {
+		vscode.window.showInformationMessage(`source file selected: ${uri.fsPath}`);
+		source_uri = uri
+	});
 
-		// Display a message box to the user
-		vscode.window.showInformationMessage('GumTree diff: Command received successfully, implementation in progress');
-		// TODO: create difff here
+	disposable = vscode.commands.registerCommand('gumtree-diff.dest_select', function (dest_uri) {
+		vscode.window.showInformationMessage(`destination file selected: ${dest_uri.fsPath}`);
+		if (source_uri == null) {
+			vscode.window.showInformationMessage("[ERROR] no source file selected")
+		}
+		vscode.window.showInformationMessage(`comparing files: source-${source_uri.fsPath}, dest-${dest_uri.fsPath}`);
 	});
 
 	context.subscriptions.push(disposable);
