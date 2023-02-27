@@ -27,15 +27,13 @@ import com.github.gumtreediff.gen.python.PythonTreeGenerator;
 import com.github.gumtreediff.io.ActionsIoUtils;
 import com.github.gumtreediff.io.DirectoryComparator;
 import com.github.gumtreediff.mapper.TopDownMapper;
-import com.github.gumtreediff.matchers.MappingStore;
+import com.github.gumtreediff.matchers.*;
 import com.github.gumtreediff.matchers.heuristic.gt.GreedySubtreeMatcher;
 import com.github.gumtreediff.tree.Tree;
 import com.github.gumtreediff.tree.TreeContext;
 import com.github.gumtreediff.utils.Pair;
 import com.github.gumtreediff.utils.Registry;
 import com.github.gumtreediff.gen.TreeGenerator;
-import com.github.gumtreediff.matchers.Matcher;
-import com.github.gumtreediff.matchers.Matchers;
 import org.atteo.classindex.ClassIndex;
 
 import java.io.File;
@@ -49,24 +47,6 @@ import java.util.Set;
 
 
 public class Run {
-
-//    public static class Options implements Option.Context {
-//        @Override
-//        public Option[] values() {
-//            return new Option[]{
-//                    new Option("-C", "Set system property (-c property value). ",
-//                            2) {
-//
-//                        @Override
-//                        protected void process(String name, String[] args) {
-//                            System.setProperty(args[0], args[1]);
-//                        }
-//                    },
-//                    new Option.Verbose(),
-//                    new Help(this)
-//            };
-//        }
-//    }
 
     public static void initGenerators() {
         ClassIndex.getSubclasses(TreeGenerator.class).forEach(
@@ -88,74 +68,42 @@ public class Run {
                 });
     }
 
-//    public static void initClients() {
-//        ClassIndex.getSubclasses(Client.class).forEach(
-//                cli -> {
-//                    com.github.gumtreediff.client.Register a =
-//                            cli.getAnnotation(com.github.gumtreediff.client.Register.class);
-//                    if (a != null)
-//                        Clients.getInstance().install(cli, a);
-//                });
-//    }
-
     static {
         initGenerators();
         initMatchers();
     }
 
-//    public static void startClient(String name, Registry.Factory<? extends Client> client, String[] args) {
-//        try {
-//            Client inst = client.newInstance(new Object[]{ args });
-//            try {
-//                inst.run();
-//            } catch (Exception e) {
-//                System.err.printf("Error while running client '%s'.\n", name);
-//                e.printStackTrace();
-//            }
-//        } catch (InvocationTargetException e) {
-//            System.err.printf("Error while parsing arguments of client '%s'.\n", name);
-//            e.printStackTrace();
-//        } catch (InstantiationException | IllegalAccessException e) {
-//            System.err.printf("Can't instantiate client '%s'.", name);
-//            e.printStackTrace();
-//        }
-//    }
+    private static void assert_mappings(MappingStore mappings, MappingStore orig_mappings) {
+        for (Mapping m : mappings) {
+            if (!orig_mappings.has(m.first, m.second)) {
+                throw new AssertionError("Bad mapping in my algo");
+            }
+        }
+        for (Mapping om : orig_mappings) {
+            if (!mappings.has(om.first, om.second)) {
+                throw new AssertionError("Missing original mapping in my algo");
+            }
+        }
+    }
 
     public static void main(String[] origArgs) throws IOException, Exception {
-//        Options opts = new Options();
-//        String[] args = Option.processCommandLine(origArgs, opts);
-//
-//        initClients();
-//
-//        Registry.Factory<? extends Client> client;
-//        if (args.length == 0) {
-//            System.err.println("No command given.");
-//            displayHelp(System.err, opts);
-//        } else if ((client = Clients.getInstance().getFactory(args[0])) == null) {
-//            System.err.printf("Unknown sub-command '%s'.\n", args[0]);
-//            displayHelp(System.err, opts);
-//        } else {
-//            var clientArgs = new ArrayList<>(Arrays.asList(args));
-//            clientArgs.remove(0);
-//            if (Arrays.asList(origArgs).contains("--help"))
-//                clientArgs.add("--help");
-//            String[] finalArgs = new String[clientArgs.size()];
-//            clientArgs.toArray(finalArgs);
-//            startClient(origArgs[0], client, finalArgs);
-//        }
         Run.initGenerators(); // registers the available parsers
-        String srcFile = "C:\\project\\a.py";
-        String dstFile = "C:\\project\\b.py";
+        String srcFile = "C:\\project\\c.py";
+        String dstFile = "C:\\project\\e.py";
         TreeContext src = new PythonTreeGenerator().generateFrom().file(srcFile);
         TreeContext dst = new PythonTreeGenerator().generateFrom().file(dstFile);
 
 //        Matcher defaultMatcher = Matchers.getInstance().getMatcher(); // retrieves the default matcher
 //        MappingStore mappings = defaultMatcher.match(src.getRoot(), dst.getRoot()); // computes the mappings between the trees
+        /* original */
+        Matcher greedy_subtree = new GreedySubtreeMatcher();
+        MappingStore orig_mappings = greedy_subtree.match(src.getRoot(), dst.getRoot());
 
-//        Matcher greedy_subtree = new GreedySubtreeMatcher();
-//        MappingStore orig_mappings = greedy_subtree.match(src.getRoot(), dst.getRoot());
+        /* my */
         TopDownMapper mapper = new TopDownMapper(src.getRoot(), dst.getRoot());
         MappingStore mappings = mapper.map();
+
+        assert_mappings(mappings, orig_mappings);
 
         EditScriptGenerator editScriptGenerator = new SimplifiedChawatheScriptGenerator(); // instantiates the simplified Chawathe script generator
         EditScript actions = editScriptGenerator.computeActions(mappings); // computes the edit script
@@ -163,28 +111,4 @@ public class Run {
         ActionsIoUtils.ActionSerializer serializer = ActionsIoUtils.toJson(src, actions, mappings);
         serializer.writeTo(System.out);
     }
-
-//    public static void displayHelp(PrintStream out, Option.Context ctx) {
-//        out.println("Available Options:");
-//        Option.displayOptions(out, ctx);
-//        out.println();
-//        listCommand(out);
-//    }
-//
-//    public static void listCommand(PrintStream out) {
-//        out.println("Available Commands:");
-//        for (Registry.Entry cmd: Clients.getInstance().getEntries())
-//            out.println("* " + cmd);
-//    }
-//
-//    static class Help extends Option.Help {
-//        public Help(Context ctx) {
-//            super(ctx);
-//        }
-//
-//        @Override
-//        public void process(String name, String[] args) {
-//            displayHelp(System.out, context);
-//        }
-//    }
 }

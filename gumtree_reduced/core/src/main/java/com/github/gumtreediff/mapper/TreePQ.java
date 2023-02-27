@@ -11,7 +11,7 @@ public class TreePQ extends PriorityQueue<Tree> {
     static class TreeComparator implements Comparator<Tree> {
         @Override
         public int compare(Tree t1, Tree t2) {
-            return t1.getMetrics().height - t2.getMetrics().height;
+            return Integer.compare(t2.getMetrics().height, t1.getMetrics().height);
         }
     }
     public TreePQ() {

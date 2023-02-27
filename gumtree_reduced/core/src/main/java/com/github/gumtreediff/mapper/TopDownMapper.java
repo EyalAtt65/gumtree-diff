@@ -12,7 +12,8 @@ public class TopDownMapper {
     private Tree src;
     private Tree dst;
     private MappingStore mappings;
-    private final int min_height = 2;
+    /** This is zero-based. Note that in the paper they use height that is one-based. */
+    private final int min_height = 1;
     public TopDownMapper(Tree src, Tree dst) {
         this.src = src;
         this.dst = dst;
@@ -46,8 +47,10 @@ public class TopDownMapper {
     public boolean exists_other_isomorphic_node(Tree t1, Tree t2, Tree Tree2) {
         for (Tree tx : Tree2.preOrder()) { // TODO: maybe not optimal?
             // TODO: is the hash how we check that it's the same node?
-            if ((tx.getMetrics().hash != t2.getMetrics().hash && t1.isIsomorphicTo(tx))) {
-                return true;
+            if (tx.getMetrics().hash != t2.getMetrics().hash) {
+                if (t1.isIsomorphicTo(tx)) {
+                    return true;
+                }
             }
         }
         return false;
@@ -89,7 +92,7 @@ public class TopDownMapper {
 
             List<Pair<Tree, Tree>> iso_pairs = get_isomorphic_descendants(p.first, p.second);
             for (Pair<Tree, Tree> iso_pair : iso_pairs) {
-                if (mappings.areBothUnmapped(iso_pair.first, iso_pair.second)) {
+                if (mappings.isMappingAllowed(iso_pair.first, iso_pair.second)) {
                     mappings.addMapping(iso_pair.first, iso_pair.second);
                 }
             }
@@ -108,14 +111,15 @@ public class TopDownMapper {
         src_pq.add(src);
         dst_pq.add(dst);
 
-        while (Math.min(src_pq.peek_max(), dst_pq.peek_max()) > this.min_height) {
+        while (src_pq.size() > 0 && dst_pq.size() > 0 &&
+                Math.min(src_pq.peek_max(), dst_pq.peek_max()) > this.min_height - 1) { // TODO: why -1?
             if (src_pq.peek_max() != dst_pq.peek_max()) {
                 if (src_pq.peek_max() > dst_pq.peek_max()) {
                     ArrayList<Tree> popped = src_pq.pop_list();
-                    dst_pq.open_list(popped);
+                    src_pq.open_list(popped);
                 } else {
                     ArrayList<Tree> popped = dst_pq.pop_list();
-                    src_pq.open_list(popped);
+                    dst_pq.open_list(popped);
                 }
 
             } else {
@@ -128,10 +132,13 @@ public class TopDownMapper {
                             exists_other_isomorphic_node(p.second, p.first, src)) {
                             candidates.add(p);
                         } else {
+                            if (mappings.isMappingAllowed(p.first, p.second)) {
+                                mappings.addMapping(p.first, p.second);
+                            }
                             for (Pair<Tree, Tree> iso_pair : get_isomorphic_descendants(p.first, p.second)) {
-//                                if (mappings.areBothUnmapped(iso_pair.first, iso_pair.second)) {
+                                if (mappings.isMappingAllowed(iso_pair.first, iso_pair.second)) {
                                     mappings.addMapping(iso_pair.first, iso_pair.second);
-//                                }
+                                }
                             }
                         }
                     }
@@ -168,8 +175,10 @@ public class TopDownMapper {
             }
             return 2d * counter / (num_descendants1 + num_descendants2);
         }
+        @Override
         public int compare(Pair<Tree, Tree> p1, Pair<Tree, Tree> p2) {
-            return Double.compare(calculate_dice(p1), calculate_dice(p2));
+            return Double.compare(calculate_dice(new Pair<Tree, Tree>(p2.first.getParent(), p2.second.getParent())),
+                    calculate_dice(new Pair<Tree, Tree>(p1.first.getParent(), p1.second.getParent())));
         }
     }
 }
