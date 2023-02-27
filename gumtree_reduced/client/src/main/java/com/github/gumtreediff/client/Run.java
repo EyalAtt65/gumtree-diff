@@ -26,7 +26,9 @@ import com.github.gumtreediff.gen.TreeGenerators;
 import com.github.gumtreediff.gen.python.PythonTreeGenerator;
 import com.github.gumtreediff.io.ActionsIoUtils;
 import com.github.gumtreediff.io.DirectoryComparator;
+import com.github.gumtreediff.mapper.TopDownMapper;
 import com.github.gumtreediff.matchers.MappingStore;
+import com.github.gumtreediff.matchers.heuristic.gt.GreedySubtreeMatcher;
 import com.github.gumtreediff.tree.Tree;
 import com.github.gumtreediff.tree.TreeContext;
 import com.github.gumtreediff.utils.Pair;
@@ -48,23 +50,23 @@ import java.util.Set;
 
 public class Run {
 
-    public static class Options implements Option.Context {
-        @Override
-        public Option[] values() {
-            return new Option[]{
-                    new Option("-C", "Set system property (-c property value). ",
-                            2) {
-
-                        @Override
-                        protected void process(String name, String[] args) {
-                            System.setProperty(args[0], args[1]);
-                        }
-                    },
-                    new Option.Verbose(),
-                    new Help(this)
-            };
-        }
-    }
+//    public static class Options implements Option.Context {
+//        @Override
+//        public Option[] values() {
+//            return new Option[]{
+//                    new Option("-C", "Set system property (-c property value). ",
+//                            2) {
+//
+//                        @Override
+//                        protected void process(String name, String[] args) {
+//                            System.setProperty(args[0], args[1]);
+//                        }
+//                    },
+//                    new Option.Verbose(),
+//                    new Help(this)
+//            };
+//        }
+//    }
 
     public static void initGenerators() {
         ClassIndex.getSubclasses(TreeGenerator.class).forEach(
@@ -86,38 +88,38 @@ public class Run {
                 });
     }
 
-    public static void initClients() {
-        ClassIndex.getSubclasses(Client.class).forEach(
-                cli -> {
-                    com.github.gumtreediff.client.Register a =
-                            cli.getAnnotation(com.github.gumtreediff.client.Register.class);
-                    if (a != null)
-                        Clients.getInstance().install(cli, a);
-                });
-    }
+//    public static void initClients() {
+//        ClassIndex.getSubclasses(Client.class).forEach(
+//                cli -> {
+//                    com.github.gumtreediff.client.Register a =
+//                            cli.getAnnotation(com.github.gumtreediff.client.Register.class);
+//                    if (a != null)
+//                        Clients.getInstance().install(cli, a);
+//                });
+//    }
 
     static {
         initGenerators();
         initMatchers();
     }
 
-    public static void startClient(String name, Registry.Factory<? extends Client> client, String[] args) {
-        try {
-            Client inst = client.newInstance(new Object[]{ args });
-            try {
-                inst.run();
-            } catch (Exception e) {
-                System.err.printf("Error while running client '%s'.\n", name);
-                e.printStackTrace();
-            }
-        } catch (InvocationTargetException e) {
-            System.err.printf("Error while parsing arguments of client '%s'.\n", name);
-            e.printStackTrace();
-        } catch (InstantiationException | IllegalAccessException e) {
-            System.err.printf("Can't instantiate client '%s'.", name);
-            e.printStackTrace();
-        }
-    }
+//    public static void startClient(String name, Registry.Factory<? extends Client> client, String[] args) {
+//        try {
+//            Client inst = client.newInstance(new Object[]{ args });
+//            try {
+//                inst.run();
+//            } catch (Exception e) {
+//                System.err.printf("Error while running client '%s'.\n", name);
+//                e.printStackTrace();
+//            }
+//        } catch (InvocationTargetException e) {
+//            System.err.printf("Error while parsing arguments of client '%s'.\n", name);
+//            e.printStackTrace();
+//        } catch (InstantiationException | IllegalAccessException e) {
+//            System.err.printf("Can't instantiate client '%s'.", name);
+//            e.printStackTrace();
+//        }
+//    }
 
     public static void main(String[] origArgs) throws IOException, Exception {
 //        Options opts = new Options();
@@ -147,8 +149,13 @@ public class Run {
         TreeContext src = new PythonTreeGenerator().generateFrom().file(srcFile);
         TreeContext dst = new PythonTreeGenerator().generateFrom().file(dstFile);
 
-        Matcher defaultMatcher = Matchers.getInstance().getMatcher(); // retrieves the default matcher
-        MappingStore mappings = defaultMatcher.match(src.getRoot(), dst.getRoot()); // computes the mappings between the trees
+//        Matcher defaultMatcher = Matchers.getInstance().getMatcher(); // retrieves the default matcher
+//        MappingStore mappings = defaultMatcher.match(src.getRoot(), dst.getRoot()); // computes the mappings between the trees
+
+//        Matcher greedy_subtree = new GreedySubtreeMatcher();
+//        MappingStore orig_mappings = greedy_subtree.match(src.getRoot(), dst.getRoot());
+        TopDownMapper mapper = new TopDownMapper(src.getRoot(), dst.getRoot());
+        MappingStore mappings = mapper.map();
 
         EditScriptGenerator editScriptGenerator = new SimplifiedChawatheScriptGenerator(); // instantiates the simplified Chawathe script generator
         EditScript actions = editScriptGenerator.computeActions(mappings); // computes the edit script
@@ -157,27 +164,27 @@ public class Run {
         serializer.writeTo(System.out);
     }
 
-    public static void displayHelp(PrintStream out, Option.Context ctx) {
-        out.println("Available Options:");
-        Option.displayOptions(out, ctx);
-        out.println();
-        listCommand(out);
-    }
-
-    public static void listCommand(PrintStream out) {
-        out.println("Available Commands:");
-        for (Registry.Entry cmd: Clients.getInstance().getEntries())
-            out.println("* " + cmd);
-    }
-
-    static class Help extends Option.Help {
-        public Help(Context ctx) {
-            super(ctx);
-        }
-
-        @Override
-        public void process(String name, String[] args) {
-            displayHelp(System.out, context);
-        }
-    }
+//    public static void displayHelp(PrintStream out, Option.Context ctx) {
+//        out.println("Available Options:");
+//        Option.displayOptions(out, ctx);
+//        out.println();
+//        listCommand(out);
+//    }
+//
+//    public static void listCommand(PrintStream out) {
+//        out.println("Available Commands:");
+//        for (Registry.Entry cmd: Clients.getInstance().getEntries())
+//            out.println("* " + cmd);
+//    }
+//
+//    static class Help extends Option.Help {
+//        public Help(Context ctx) {
+//            super(ctx);
+//        }
+//
+//        @Override
+//        public void process(String name, String[] args) {
+//            displayHelp(System.out, context);
+//        }
+//    }
 }
