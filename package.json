@@ -17,16 +17,25 @@
     "menus": {
       "explorer/context": [
         {
-          "command": "gumtree-diff.diff",
-          "title": "Show GumTree diff",
-          "when": "listDoubleSelection"
+          "command": "gumtree-diff.source_select",
+          "title": "GumTree diff: Select source file",
+          "when": "listHasSelectionOrFocus"
+        },
+        {
+          "command": "gumtree-diff.dest_select",
+          "title": "GumTree diff: Select destination file",
+          "when": "listHasSelectionOrFocus"
         }
       ]
     },
     "commands": [
       {
-        "command": "gumtree-diff.diff",
-        "title": "Show GumTree diff"
+        "command": "gumtree-diff.source_select",
+        "title": "GumTree diff: Select source file"
+      },
+      {
+        "command": "gumtree-diff.dest_select",
+        "title": "GumTree diff: Select destination file"
       }
     ]
   },
