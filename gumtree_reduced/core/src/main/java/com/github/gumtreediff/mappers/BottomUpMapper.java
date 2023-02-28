@@ -77,8 +77,8 @@ public class BottomUpMapper extends AbstractMapper {
                                 mappings.addMapping(m.first, m.second);
                             }
                         }
-                        break;
                     }
+                    break;
                 }
             }
         }
