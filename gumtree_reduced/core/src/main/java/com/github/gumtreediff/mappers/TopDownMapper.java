@@ -1,19 +1,15 @@
-package com.github.gumtreediff.mapper;
+package com.github.gumtreediff.mappers;
 
 import com.github.gumtreediff.matchers.Mapping;
 import com.github.gumtreediff.matchers.MappingStore;
 import com.github.gumtreediff.tree.Tree;
 import com.github.gumtreediff.utils.Pair;
-import com.sun.source.tree.TreeVisitor;
 
 import java.util.*;
 
-public class TopDownMapper {
-    private Tree src;
-    private Tree dst;
-    private MappingStore mappings;
+public class TopDownMapper extends AbstractMapper {
     /** This is zero-based. Note that in the paper they use height that is one-based. */
-    private final int min_height = 1;
+    private final int MIN_HEIGHT = 1;
     public TopDownMapper(Tree src, Tree dst) {
         this.src = src;
         this.dst = dst;
@@ -36,7 +32,10 @@ public class TopDownMapper {
         List<Pair<Tree, Tree>> out = new ArrayList<>();
         for (Tree descendant1 : t1.getDescendants()) {
             for (Tree descendant2 : t2.getDescendants()) {
-                if (descendant1.isIsomorphicTo(descendant2)) {
+                /* TODO: I have found nodes where I would say they are isomorphic but isIsomorphicTo returned false,
+                    and the strcutreHash was the same. So currently going with structureHash. */
+//                if (descendant1.isIsomorphicTo(descendant2)) {
+                if (descendant1.getMetrics().structureHash == descendant2.getMetrics().structureHash) {
                     out.add(new Pair<>(descendant1, descendant2));
                 }
             }
@@ -46,9 +45,9 @@ public class TopDownMapper {
 
     public boolean exists_other_isomorphic_node(Tree t1, Tree t2, Tree Tree2) {
         for (Tree tx : Tree2.preOrder()) { // TODO: maybe not optimal?
-            // TODO: is the hash how we check that it's the same node?
             if (tx.getMetrics().hash != t2.getMetrics().hash) {
-                if (t1.isIsomorphicTo(tx)) {
+//                if (t1.isIsomorphicTo(tx)) {
+                if (t1.getMetrics().structureHash == tx.getMetrics().structureHash) {
                     return true;
                 }
             }
@@ -90,6 +89,9 @@ public class TopDownMapper {
             Pair<Tree, Tree> p = candidates.get(0);
             candidates.remove(0);
 
+            if (mappings.isMappingAllowed(p.first, p.second)) {
+                mappings.addMapping(p.first, p.second);
+            }
             List<Pair<Tree, Tree>> iso_pairs = get_isomorphic_descendants(p.first, p.second);
             for (Pair<Tree, Tree> iso_pair : iso_pairs) {
                 if (mappings.isMappingAllowed(iso_pair.first, iso_pair.second)) {
@@ -112,7 +114,7 @@ public class TopDownMapper {
         dst_pq.add(dst);
 
         while (src_pq.size() > 0 && dst_pq.size() > 0 &&
-                Math.min(src_pq.peek_max(), dst_pq.peek_max()) > this.min_height - 1) { // TODO: why -1?
+                Math.min(src_pq.peek_max(), dst_pq.peek_max()) > this.MIN_HEIGHT -2) {
             if (src_pq.peek_max() != dst_pq.peek_max()) {
                 if (src_pq.peek_max() > dst_pq.peek_max()) {
                     ArrayList<Tree> popped = src_pq.pop_list();
@@ -127,7 +129,8 @@ public class TopDownMapper {
                 ArrayList<Tree> H2 = dst_pq.pop_list();
                 for (Pair<Tree, Tree> p : tree_cartesian_product(H1, H2)) {
                     /* t1 = p.first ; t2 = p.second */
-                    if (p.first.isIsomorphicTo(p.second)) {
+//                    if (p.first.isIsomorphicTo(p.second)) {
+                    if (p.first.getMetrics().structureHash == p.second.getMetrics().structureHash) {
                         if (exists_other_isomorphic_node(p.first, p.second, dst) ||
                             exists_other_isomorphic_node(p.second, p.first, src)) {
                             candidates.add(p);
@@ -164,19 +167,9 @@ public class TopDownMapper {
     }
 
     public class CandidatesComparator implements Comparator<Pair<Tree, Tree>> {
-        private double calculate_dice(Pair<Tree, Tree> p) {
-            int num_descendants1 = p.first.getDescendants().size();
-            int num_descendants2 = p.second.getDescendants().size();
-            int counter = 0;
-            for (Tree d : p.first.getDescendants()) {
-                if (mappings.has(d, p.second)) {
-                    counter++;
-                }
-            }
-            return 2d * counter / (num_descendants1 + num_descendants2);
-        }
         @Override
         public int compare(Pair<Tree, Tree> p1, Pair<Tree, Tree> p2) {
+            /* Dice needs to be calculated on the _parents_ of the compared nodes */
             return Double.compare(calculate_dice(new Pair<Tree, Tree>(p2.first.getParent(), p2.second.getParent())),
                     calculate_dice(new Pair<Tree, Tree>(p1.first.getParent(), p1.second.getParent())));
         }

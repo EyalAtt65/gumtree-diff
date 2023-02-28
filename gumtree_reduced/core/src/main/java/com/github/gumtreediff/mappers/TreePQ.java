@@ -1,4 +1,4 @@
-package com.github.gumtreediff.mapper;
+package com.github.gumtreediff.mappers;
 
 import com.github.gumtreediff.tree.Tree;
 

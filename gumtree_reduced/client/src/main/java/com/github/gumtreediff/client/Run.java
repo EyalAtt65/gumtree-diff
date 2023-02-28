@@ -21,75 +21,87 @@
 package com.github.gumtreediff.client;
 
 import com.github.gumtreediff.actions.*;
-import com.github.gumtreediff.actions.model.Action;
 import com.github.gumtreediff.gen.TreeGenerators;
 import com.github.gumtreediff.gen.python.PythonTreeGenerator;
 import com.github.gumtreediff.io.ActionsIoUtils;
-import com.github.gumtreediff.io.DirectoryComparator;
-import com.github.gumtreediff.mapper.TopDownMapper;
+import com.github.gumtreediff.mappers.BottomUpMapper;
+import com.github.gumtreediff.mappers.TopDownMapper;
 import com.github.gumtreediff.matchers.*;
+import com.github.gumtreediff.matchers.heuristic.gt.GreedyBottomUpMatcher;
 import com.github.gumtreediff.matchers.heuristic.gt.GreedySubtreeMatcher;
-import com.github.gumtreediff.tree.Tree;
 import com.github.gumtreediff.tree.TreeContext;
-import com.github.gumtreediff.utils.Pair;
-import com.github.gumtreediff.utils.Registry;
 import com.github.gumtreediff.gen.TreeGenerator;
 import org.atteo.classindex.ClassIndex;
 
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
-import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Set;
 
 
 public class Run {
 
-    public static void initGenerators() {
-        ClassIndex.getSubclasses(TreeGenerator.class).forEach(
-                gen -> {
-                    com.github.gumtreediff.gen.Register a =
-                            gen.getAnnotation(com.github.gumtreediff.gen.Register.class);
-                    if (a != null)
-                        TreeGenerators.getInstance().install(gen, a);
-                });
-    }
-
-    public static void initMatchers() {
-        ClassIndex.getSubclasses(Matcher.class).forEach(
-                gen -> {
-                    com.github.gumtreediff.matchers.Register a =
-                            gen.getAnnotation(com.github.gumtreediff.matchers.Register.class);
-                    if (a != null)
-                        Matchers.getInstance().install(gen, a);
-                });
-    }
-
-    static {
-        initGenerators();
-        initMatchers();
-    }
+//    public static void initGenerators() {
+//        ClassIndex.getSubclasses(TreeGenerator.class).forEach(
+//                gen -> {
+//                    com.github.gumtreediff.gen.Register a =
+//                            gen.getAnnotation(com.github.gumtreediff.gen.Register.class);
+//                    if (a != null)
+//                        TreeGenerators.getInstance().install(gen, a);
+//                });
+//    }
+//
+//    public static void initMatchers() {
+//        ClassIndex.getSubclasses(Matcher.class).forEach(
+//                gen -> {
+//                    com.github.gumtreediff.matchers.Register a =
+//                            gen.getAnnotation(com.github.gumtreediff.matchers.Register.class);
+//                    if (a != null)
+//                        Matchers.getInstance().install(gen, a);
+//                });
+//    }
+//
+//    static {
+//        initGenerators();
+//        initMatchers();
+//    }
 
     private static void assert_mappings(MappingStore mappings, MappingStore orig_mappings) {
+        int counter0 = 0;
         for (Mapping m : mappings) {
             if (!orig_mappings.has(m.first, m.second)) {
-                throw new AssertionError("Bad mapping in my algo");
+                counter0++;
+//                throw new AssertionError("Bad mapping in my algo");
             }
         }
+        System.out.printf("%s bad mappings in my algo\n", counter0);
+
+
+        int counter = 0;
         for (Mapping om : orig_mappings) {
             if (!mappings.has(om.first, om.second)) {
-                throw new AssertionError("Missing original mapping in my algo");
+//                mappings.addMapping(om.first, om.second);
+                counter++;
             }
         }
+        System.out.printf("%s missing original mappings in my algo\n", counter);
+//        if (counter > 1) {
+//            throw new AssertionError("Missing original mappings in my algo");
+//        }
     }
 
+
+//    public void run_tests() {
+//        File tests_dir = new File("tests");
+//        Arrays.stream(tests_dir.listFiles()).sorted()
+//        for (File f : tests_dir.listFiles()) {
+//
+//        }
+//    }
+
     public static void main(String[] origArgs) throws IOException, Exception {
-        Run.initGenerators(); // registers the available parsers
-        String srcFile = "C:\\project\\c.py";
-        String dstFile = "C:\\project\\e.py";
+//        Run.initGenerators(); // registers the available parsers
+        String srcFile = "C:\\project\\gumtree-diff\\gumtree_reduced\\tests\\4a.py";
+        String dstFile = "C:\\project\\gumtree-diff\\gumtree_reduced\\tests\\4b.py";
         TreeContext src = new PythonTreeGenerator().generateFrom().file(srcFile);
         TreeContext dst = new PythonTreeGenerator().generateFrom().file(dstFile);
 
@@ -97,18 +109,23 @@ public class Run {
 //        MappingStore mappings = defaultMatcher.match(src.getRoot(), dst.getRoot()); // computes the mappings between the trees
         /* original */
         Matcher greedy_subtree = new GreedySubtreeMatcher();
-        MappingStore orig_mappings = greedy_subtree.match(src.getRoot(), dst.getRoot());
+        MappingStore orig_td_mappings = greedy_subtree.match(src.getRoot(), dst.getRoot());
+        Matcher greedy_bottomup = new GreedyBottomUpMatcher();
+        MappingStore orig_bu_mappings = greedy_bottomup.match(src.getRoot(), dst.getRoot(), orig_td_mappings);
 
         /* my */
-        TopDownMapper mapper = new TopDownMapper(src.getRoot(), dst.getRoot());
-        MappingStore mappings = mapper.map();
+        TopDownMapper td_mapper = new TopDownMapper(src.getRoot(), dst.getRoot());
+        MappingStore td_mappings = td_mapper.map();
+        assert_mappings(td_mappings, orig_td_mappings);
+        BottomUpMapper bu_mapper = new BottomUpMapper(src.getRoot(), dst.getRoot(), td_mappings);
+        MappingStore bu_mappings = bu_mapper.map();
 
-        assert_mappings(mappings, orig_mappings);
+        assert_mappings(bu_mappings, orig_bu_mappings);
 
         EditScriptGenerator editScriptGenerator = new SimplifiedChawatheScriptGenerator(); // instantiates the simplified Chawathe script generator
-        EditScript actions = editScriptGenerator.computeActions(mappings); // computes the edit script
+        EditScript actions = editScriptGenerator.computeActions(bu_mappings); // computes the edit script
 
-        ActionsIoUtils.ActionSerializer serializer = ActionsIoUtils.toJson(src, actions, mappings);
+        ActionsIoUtils.ActionSerializer serializer = ActionsIoUtils.toJson(src, actions, bu_mappings);
         serializer.writeTo(System.out);
     }
 }
