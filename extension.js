@@ -32,20 +32,21 @@ function activate(context) {
 	// The command has been defined in the package.json file
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
-	let disposable = vscode.commands.registerCommand('gumtree-diff.source_select', function (uri) {
+	vscode.commands.registerCommand('gumtree-diff.source_select', function (uri) {
 		vscode.window.showInformationMessage(`source file selected: ${uri.fsPath}`)
 		source_uri = uri
 	});
 
-	disposable = vscode.commands.registerCommand('gumtree-diff.dest_select', function (dest_uri) {
+	vscode.commands.registerCommand('gumtree-diff.dest_select', function (dest_uri) {
 		vscode.window.showInformationMessage(`destination file selected: ${dest_uri.fsPath}`)
 		if (source_uri == null) {
 			vscode.window.showInformationMessage("[ERROR] no source file selected")
 		}
-		vscode.window.showInformationMessage(`comparing files: source-${source_uri.fsPath}, dest-${dest_uri.fsPath}`)
+		// vscode.window.showInformationMessage(`comparing files: source-${source_uri.fsPath}, dest-${dest_uri.fsPath}`)
+		let newtab = new vscode.TabInputTextDiff(source_uri,dest_uri)
+		// vscode.workspace.openTextDocument(newtab)
+		vscode.window.showTextDocument(newtab.modified)
 	});
-
-	context.subscriptions.push(disposable)
 }
 
 // This method is called when your extension is deactivated
