@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="ae7a07f0-2f62-454e-ac71-664fccc3c651" name="Changes" comment="fixed break" />
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="ExternalProjectsData">
+    <projectState path="$PROJECT_DIR$">
+      <ProjectState />
+    </projectState>
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="PUSH_AUTO_UPDATE" value="true" />
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/client/src/main/java/com/github/gumtreediff/client/Run.java" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/core/src/main/java/com/github/gumtreediff/mappers/BottomUpMapper.java" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/core/src/main/java/com/github/gumtreediff/mappers/TopDownMapper.java" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/core/src/main/java/com/github/gumtreediff/mappers/TreePQ.java" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/core/src/main/java/com/github/gumtreediff/matchers/ConfigurationOptions.java" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/core/src/main/java/com/github/gumtreediff/matchers/MappingStore.java" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/core/src/main/java/com/github/gumtreediff/matchers/heuristic/gt/AbstractSubtreeMatcher.java" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/core/src/main/java/com/github/gumtreediff/matchers/heuristic/gt/GreedyBottomUpMatcher.java" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/core/src/main/java/com/github/gumtreediff/matchers/heuristic/gt/GreedySubtreeMatcher.java" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2MJkVtx7Et66BCjaMYzswL2lRoF" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;WebServerToolWindowFactoryState&quot;: &quot;false&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.detected.package.tslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;node.js.selected.package.tslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Facets&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.lookFeel&quot;,
+    &quot;vue.rearranger.settings.migration&quot;: &quot;true&quot;
+  }
+}</component>
+  <component name="RunManager">
+    <configuration name="gumtree" type="Application" factoryName="Application">
+      <option name="MAIN_CLASS_NAME" value="com.github.gumtreediff.client.Run" />
+      <module name="gumtree.client.main" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.github.gumtreediff.mappers.TopDownMapper" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+        <pattern>
+          <option name="PATTERN" value="com.github.gumtreediff.mappers.TreePQ" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+        <pattern>
+          <option name="PATTERN" value="com.github.gumtreediff.mappers.BottomUpMapper" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="ae7a07f0-2f62-454e-ac71-664fccc3c651" name="Changes" comment="" />
+      <created>1677493101276</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1677493101276</updated>
+      <workItem from="1677493104044" duration="1112000" />
+      <workItem from="1677494228835" duration="15038000" />
+      <workItem from="1677571456282" duration="10695000" />
+      <workItem from="1677582173320" duration="8982000" />
+      <workItem from="1677700889979" duration="1847000" />
+      <workItem from="1677774662840" duration="5748000" />
+    </task>
+    <task id="LOCAL-00001" summary="Implemented top-down algo">
+      <created>1677495219201</created>
+      <option name="number" value="00001" />
+      <option name="presentableId" value="LOCAL-00001" />
+      <option name="project" value="LOCAL" />
+      <updated>1677495219201</updated>
+    </task>
+    <task id="LOCAL-00002" summary="Some bug fixes in top-down">
+      <created>1677509863137</created>
+      <option name="number" value="00002" />
+      <option name="presentableId" value="LOCAL-00002" />
+      <option name="project" value="LOCAL" />
+      <updated>1677509863137</updated>
+    </task>
+    <task id="LOCAL-00003" summary="Implemented bottom-up">
+      <created>1677607928395</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1677607928395</updated>
+    </task>
+    <task id="LOCAL-00004" summary="fixed break">
+      <created>1677608872918</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1677608872918</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VcsManagerConfiguration">
+    <MESSAGE value="Implemented top-down algo" />
+    <MESSAGE value="Some bug fixes in top-down" />
+    <MESSAGE value="Implemented bottom-up" />
+    <MESSAGE value="fixed break" />
+    <option name="LAST_COMMIT_MESSAGE" value="fixed break" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <breakpoint enabled="true" type="java-exception">
+          <properties class="java.lang.AssertionError" package="java.lang" />
+          <option name="timeStamp" value="7" />
+        </breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+    <pin-to-top-manager>
+      <pinned-members>
+        <PinnedItemInfo parentTag="com.github.gumtreediff.tree.DefaultTree" memberName="parent" />
+        <PinnedItemInfo parentTag="com.github.gumtreediff.tree.DefaultTree" memberName="metadata" />
+        <PinnedItemInfo parentTag="com.github.gumtreediff.tree.DefaultTree" memberName="type" />
+        <PinnedItemInfo parentTag="com.github.gumtreediff.tree.DefaultTree" memberName="label" />
+      </pinned-members>
+    </pin-to-top-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/gumtree$Unnamed.ic" NAME="Unnamed Coverage Results" MODIFIED="1677502333611" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="idea" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false">
+      <FILTER>com.github.gumtreediff.mapper.TopDownMapper</FILTER>
+      <FILTER>com.github.gumtreediff.mapper.TreePQ</FILTER>
+    </SUITE>
+    <SUITE FILE_PATH="coverage/gumtree$gumtree.ic" NAME="gumtree Coverage Results" MODIFIED="1677582711982" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="idea" COVERAGE_BY_TEST_ENABLED="false" COVERAGE_TRACING_ENABLED="false">
+      <FILTER>com.github.gumtreediff.mappers.TopDownMapper</FILTER>
+      <FILTER>com.github.gumtreediff.mappers.TreePQ</FILTER>
+      <FILTER>com.github.gumtreediff.mappers.BottomUpMapper</FILTER>
+    </SUITE>
+  </component>
+</project>
