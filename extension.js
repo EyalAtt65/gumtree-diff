@@ -6,16 +6,22 @@ const vscode = require('vscode');
 // Your extension is activated the very first time the command is executed
 
 function run_java(src_filepath, dst_filepath) {
-	let java = require('java');
+	let output = ''
 
-	// TODO: replace values here with actual names once available
-	java.classpath.push("build_dir")
+	let spawn = require('child_process').spawn
+	let proc = spawn('java', ['-com.github.gumtreediff.client.Run',
+							  '-cp',
+							  `"${__dirname}\\gumtree_reduced\\gen.python\\build\\classes\\java\\main";
+							  "${__dirname}\\gumtree_reduced\\client\\build\\classes\\java\\main";
+							  "${__dirname}\\gumtree_reduced\\core\\build\\classes\\java\\main"`
+	]);
 
-	let result = java.import("ClassName")
+	proc.stdout.on('data', function (data) {
+		output += data
+	});
 
-	let instance = java.newInstanceSync("ClassName")
-
-	result = java.callStaticMethodSync("className","methodName",[src_filepath,dst_filepath])
+	proc.on('exit', function () {});
+	return output
 }
 
 /**
@@ -33,12 +39,12 @@ function activate(context) {
 	// Now provide the implementation of the command with  registerCommand
 	// The commandId parameter must match the command field in package.json
 	vscode.commands.registerCommand('gumtree-diff.source_select', function (uri) {
-		vscode.window.showInformationMessage(`source file selected: ${uri.fsPath}`)
+		// vscode.window.showInformationMessage(`source file selected: ${uri.fsPath}`)
 		source_uri = uri
 	});
 
 	vscode.commands.registerCommand('gumtree-diff.dest_select', function (dest_uri) {
-		vscode.window.showInformationMessage(`destination file selected: ${dest_uri.fsPath}`)
+		// vscode.window.showInformationMessage(`destination file selected: ${dest_uri.fsPath}`)
 		if (source_uri == null) {
 			vscode.window.showInformationMessage("[ERROR] no source file selected")
 		}
@@ -50,6 +56,9 @@ function activate(context) {
 		// let newtab2 = new vscode.TabInputTextDiff(dest_uri, dest_uri)
 		// vscode.window.showTextDocument(newtab.modified)
 		// vscode.window.showTextDocument(newtab2.modified, {viewColumn: vscode.ViewColumn.Beside})
+
+		let output = run_java(source_uri.fsPath,dest_uri.fsPath)
+		vscode.window.showInformationMessage('fuck this \"' + output + '\" shit')
 
 		vscode.workspace.openTextDocument(source_uri).then(src_doc => {
 			vscode.window.showTextDocument(src_doc).then(src_editor => {
