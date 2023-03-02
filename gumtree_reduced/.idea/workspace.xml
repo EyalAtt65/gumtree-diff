@@ -4,7 +4,10 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="ae7a07f0-2f62-454e-ac71-664fccc3c651" name="Changes" comment="fixed break" />
+    <list default="true" id="ae7a07f0-2f62-454e-ac71-664fccc3c651" name="Changes" comment="Added external jars from gradle">
+      <change beforePath="$PROJECT_DIR$/../extension.js" beforeDir="false" afterPath="$PROJECT_DIR$/../extension.js" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -98,7 +101,7 @@
       <workItem from="1677571456282" duration="10695000" />
       <workItem from="1677582173320" duration="8982000" />
       <workItem from="1677700889979" duration="1847000" />
-      <workItem from="1677774662840" duration="5748000" />
+      <workItem from="1677774662840" duration="6895000" />
     </task>
     <task id="LOCAL-00001" summary="Implemented top-down algo">
       <created>1677495219201</created>
@@ -128,7 +131,14 @@
       <option name="project" value="LOCAL" />
       <updated>1677608872918</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="Added external jars from gradle">
+      <created>1677782485155</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1677782485155</updated>
+    </task>
+    <option name="localTasksCounter" value="6" />
     <servers />
   </component>
   <component name="TypeScriptGeneratedFilesManager">
@@ -150,7 +160,8 @@
     <MESSAGE value="Some bug fixes in top-down" />
     <MESSAGE value="Implemented bottom-up" />
     <MESSAGE value="fixed break" />
-    <option name="LAST_COMMIT_MESSAGE" value="fixed break" />
+    <MESSAGE value="Added external jars from gradle" />
+    <option name="LAST_COMMIT_MESSAGE" value="Added external jars from gradle" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
