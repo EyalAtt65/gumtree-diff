@@ -39,7 +39,23 @@ import java.util.Arrays;
 
 
 public class Run {
+    public static class Options implements Option.Context {
+        @Override
+        public Option[] values() {
+            return new Option[]{
+                    new Option("-C", "Set system property (-c property value). ",
+                            2) {
 
+                        @Override
+                        protected void process(String name, String[] args) {
+                            System.setProperty(args[0], args[1]);
+                        }
+                    },
+                    new Option.Verbose(),
+//                    new Help(this)
+            };
+        }
+    }
 //    public static void initGenerators() {
 //        ClassIndex.getSubclasses(TreeGenerator.class).forEach(
 //                gen -> {
@@ -99,28 +115,27 @@ public class Run {
 //    }
 
     public static void main(String[] origArgs) throws IOException, Exception {
-//        Run.initGenerators(); // registers the available parsers
-        String srcFile = "C:\\project\\gumtree-diff\\gumtree_reduced\\tests\\4a.py";
-        String dstFile = "C:\\project\\gumtree-diff\\gumtree_reduced\\tests\\4b.py";
-        TreeContext src = new PythonTreeGenerator().generateFrom().file(srcFile);
-        TreeContext dst = new PythonTreeGenerator().generateFrom().file(dstFile);
+        Options opts = new Options();
+        String[] args = Option.processCommandLine(origArgs, opts);
+        TreeContext src = new PythonTreeGenerator().generateFrom().file(args[0]);
+        TreeContext dst = new PythonTreeGenerator().generateFrom().file(args[1]);
 
 //        Matcher defaultMatcher = Matchers.getInstance().getMatcher(); // retrieves the default matcher
 //        MappingStore mappings = defaultMatcher.match(src.getRoot(), dst.getRoot()); // computes the mappings between the trees
         /* original */
-        Matcher greedy_subtree = new GreedySubtreeMatcher();
-        MappingStore orig_td_mappings = greedy_subtree.match(src.getRoot(), dst.getRoot());
-        Matcher greedy_bottomup = new GreedyBottomUpMatcher();
-        MappingStore orig_bu_mappings = greedy_bottomup.match(src.getRoot(), dst.getRoot(), orig_td_mappings);
+//        Matcher greedy_subtree = new GreedySubtreeMatcher();
+//        MappingStore orig_td_mappings = greedy_subtree.match(src.getRoot(), dst.getRoot());
+//        Matcher greedy_bottomup = new GreedyBottomUpMatcher();
+//        MappingStore orig_bu_mappings = greedy_bottomup.match(src.getRoot(), dst.getRoot(), orig_td_mappings);
 
         /* my */
         TopDownMapper td_mapper = new TopDownMapper(src.getRoot(), dst.getRoot());
         MappingStore td_mappings = td_mapper.map();
-        assert_mappings(td_mappings, orig_td_mappings);
+//        assert_mappings(td_mappings, orig_td_mappings);
         BottomUpMapper bu_mapper = new BottomUpMapper(src.getRoot(), dst.getRoot(), td_mappings);
         MappingStore bu_mappings = bu_mapper.map();
 
-        assert_mappings(bu_mappings, orig_bu_mappings);
+//        assert_mappings(bu_mappings, orig_bu_mappings);
 
         EditScriptGenerator editScriptGenerator = new SimplifiedChawatheScriptGenerator(); // instantiates the simplified Chawathe script generator
         EditScript actions = editScriptGenerator.computeActions(bu_mappings); // computes the edit script
