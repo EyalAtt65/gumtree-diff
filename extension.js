@@ -1,27 +1,15 @@
 // The module 'vscode' contains the VS Code extensibility API
 // Import the module and reference it with the alias vscode in your code below
 const vscode = require('vscode');
+const process = require("process");
+const { execSync } = require("child_process");
+
 
 // This method is called when your extension is activated
 // Your extension is activated the very first time the command is executed
 
-function run_java(src_filepath, dst_filepath) {
-	let output = ''
-
-	let spawn = require('child_process').spawn
-	let proc = spawn('java', ['-com.github.gumtreediff.client.Run',
-							  '-cp',
-							  `"${__dirname}\\gumtree_reduced\\gen.python\\build\\classes\\java\\main";
-							  "${__dirname}\\gumtree_reduced\\client\\build\\classes\\java\\main";
-							  "${__dirname}\\gumtree_reduced\\core\\build\\classes\\java\\main"`
-	]);
-
-	proc.stdout.on('data', function (data) {
-		output += data
-	});
-
-	proc.on('exit', function () {});
-	return output
+function cmd(command) {
+	return execSync(command).toString()
 }
 
 /**
@@ -57,8 +45,8 @@ function activate(context) {
 		// vscode.window.showTextDocument(newtab.modified)
 		// vscode.window.showTextDocument(newtab2.modified, {viewColumn: vscode.ViewColumn.Beside})
 
-		let output = run_java(source_uri.fsPath,dest_uri.fsPath)
-		vscode.window.showInformationMessage('fuck this \"' + output + '\" shit')
+		let out = cmd("java -cp \".\\client\\build\\classes\\java\\main;.\\core\\build\\classes\\java\\main;.\\gen.python\\build\\classes\\java\\main;.\\external_jars\\*\" com.github.gumtreediff.client.Run")
+		vscode.window.showInformationMessage('fuck this \"' + out + '\" shit')
 
 		vscode.workspace.openTextDocument(source_uri).then(src_doc => {
 			vscode.window.showTextDocument(src_doc).then(src_editor => {
