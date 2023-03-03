@@ -49,7 +49,7 @@ function activate(context) {
 		// vscode.window.showTextDocument(newtab2.modified, {viewColumn: vscode.ViewColumn.Beside})
 
 		let out = cmd(`java.exe -cp \"${__dirname}\\gumtree_reduced\\client\\build\\classes\\java\\main;${__dirname}\\gumtree_reduced\\core\\build\\classes\\java\\main;${__dirname}\\gumtree_reduced\\gen.python\\build\\classes\\java\\main;${__dirname}\\gumtree_reduced\\external_jars\\*\" com.github.gumtreediff.client.Run ${source_uri.fsPath} ${dest_uri.fsPath}`)
-		vscode.window.showInformationMessage('fuck this \"' + out + '\" shit')
+		vscode.window.showInformationMessage(out)
 
 		vscode.workspace.openTextDocument(source_uri).then(src_doc => {
 			vscode.window.showTextDocument(src_doc).then(src_editor => {
