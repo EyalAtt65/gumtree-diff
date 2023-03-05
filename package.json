@@ -18,14 +18,20 @@
       "explorer/context": [
         {
           "command": "gumtree-diff.source_select",
-          "title": "GumTree diff: Select source file",
-          "when": "listHasSelectionOrFocus"
+          "title": "GumTree diff: Select Source for Compare",
+          "when": "listHasSelectionOrFocus && !listDoubleSelection && !listMultiSelection"
         },
         {
           "command": "gumtree-diff.dest_select",
-          "title": "GumTree diff: Select destination file",
-          "when": "listHasSelectionOrFocus"
+          "title": "GumTree diff: Compare with Selected",
+          "when": "listHasSelectionOrFocus && gumtree-diff.source_selected"
+        },
+        {
+          "command": "gumtree-diff.double_select",
+          "title": "GumTree diff: Compare Selected",
+          "when": "listDoubleSelection"
         }
+
       ]
     },
     "commands": [
@@ -35,8 +41,13 @@
       },
       {
         "command": "gumtree-diff.dest_select",
-        "title": "GumTree diff: Select destination file"
+        "title": "GumTree diff: Compare with Selected"
+      },
+      {
+        "command": "gumtree-diff.double_select",
+        "title": "GumTree diff: Compare Selected"
       }
+
     ]
   },
   "scripts": {
