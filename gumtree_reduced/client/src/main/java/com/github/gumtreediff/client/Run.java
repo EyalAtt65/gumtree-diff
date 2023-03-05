@@ -21,6 +21,7 @@
 package com.github.gumtreediff.client;
 
 import com.github.gumtreediff.actions.*;
+import com.github.gumtreediff.gen.SyntaxException;
 import com.github.gumtreediff.gen.TreeGenerators;
 import com.github.gumtreediff.gen.python.PythonTreeGenerator;
 import com.github.gumtreediff.io.ActionsIoUtils;
@@ -35,10 +36,18 @@ import org.atteo.classindex.ClassIndex;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 import java.util.Arrays;
 
 
 public class Run {
+    public static enum ErrorCodes {
+        SUCCESS, // 0
+        SYNTAX_ERROR_SRC, // 1
+        SYNTAX_ERROR_DST, // 2
+        INVALID_PATH_SRC, // 3
+        INVALID_PATH_DST // 4
+    }
     public static class Options implements Option.Context {
         @Override
         public Option[] values() {
@@ -116,9 +125,24 @@ public class Run {
 
     public static void main(String[] origArgs) throws IOException, Exception {
         Options opts = new Options();
+        TreeContext src = null, dst = null;
+
         String[] args = Option.processCommandLine(origArgs, opts);
-        TreeContext src = new PythonTreeGenerator().generateFrom().file(args[0]);
-        TreeContext dst = new PythonTreeGenerator().generateFrom().file(args[1]);
+        try {
+            src = new PythonTreeGenerator().generateFrom().file(args[0]);
+        } catch (InvalidPathException e) {
+            System.exit(ErrorCodes.INVALID_PATH_SRC.ordinal());
+        } catch (SyntaxException e) {
+            System.exit(ErrorCodes.SYNTAX_ERROR_SRC.ordinal());
+        }
+
+        try {
+            dst = new PythonTreeGenerator().generateFrom().file(args[1]);
+        } catch (InvalidPathException e) {
+            System.exit(ErrorCodes.INVALID_PATH_DST.ordinal());
+        } catch (SyntaxException e) {
+            System.exit(ErrorCodes.SYNTAX_ERROR_DST.ordinal());
+        }
 
 //        Matcher defaultMatcher = Matchers.getInstance().getMatcher(); // retrieves the default matcher
 //        MappingStore mappings = defaultMatcher.match(src.getRoot(), dst.getRoot()); // computes the mappings between the trees
