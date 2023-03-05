@@ -6,11 +6,11 @@ const { execSync } = require("child_process");
 
 const JDK_DIR = "c:\\Program Files\\Java\\jdk-17\\bin"
 const BACKEND_ERRORCODES = {
-        SUCCESS: 0,
-        SYNTAX_ERROR_SRC: 1,
-        SYNTAX_ERROR_DST: 2,
-        INVALID_PATH_SRC: 3,
-        INVALID_PATH_DST: 4
+	SUCCESS: 0,
+	SYNTAX_ERROR_SRC: 1,
+	SYNTAX_ERROR_DST: 2,
+	INVALID_PATH_SRC: 3,
+	INVALID_PATH_DST: 4
 }
 
 // This method is called when your extension is activated
@@ -126,7 +126,6 @@ function get_actions_and_ranges(json, src_editor, dst_editor) {
 	return actions_and_ranges
 }
 
-// function offset_to_range(range_base, range_end, uri) {
 function offset_to_range(range_base, range_end, editor) {
 	const data = editor.document.getText()
 
@@ -134,7 +133,7 @@ function offset_to_range(range_base, range_end, editor) {
 	let current_line = 0
 	let current_line_offset_in_file = 0
 	for (let i = 0; i < data.length; i++) {
-		if (i == range_base) { //TODO: is this supposed to be -1?
+		if (i == range_base) { //TODO: is this supposed to be range-1?
 			source_line = current_line
 			source_offset_in_line = i - current_line_offset_in_file
 		} else if (i == range_end) {
@@ -143,7 +142,7 @@ function offset_to_range(range_base, range_end, editor) {
 		}
 		if (data[i] === '\n') {
 			current_line++
-			current_line_offset_in_file = i + 1 // if current char is newline, then the line starts on next char
+			current_line_offset_in_file = i + 1 // if current char is newline, then the next line starts on next char
 		}
 	}
 
@@ -154,6 +153,7 @@ function offset_to_range(range_base, range_end, editor) {
 function decorate_actions(actions_and_ranges, src_editor, dst_editor) {
 	let redArray = []
 	for (let i = 0; i < actions_and_ranges.length; i++) {
+		// TODO: add more actions
 		if (actions_and_ranges[i]["action"] === "delete-tree") {
 			redArray.push(actions_and_ranges[i]["range"])
 		}
