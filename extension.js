@@ -33,7 +33,7 @@ function activate(context) {
 
 	vscode.commands.registerCommand('gumtree-diff.dest_select', function (uri) {
 		if (source_uri == null) {
-			vscode.window.showInformationMessage("[ERROR] no source file selected")
+			vscode.window.showErrorMessage("no source file selected")
 			return
 		}
 		dest_uri = uri
@@ -103,19 +103,19 @@ function execute_backend(source_uri, dest_uri) {
 }
 
 /**
- * @param {number} error_code 
+ * @param {Number} error_code 
  * @param {vscode.Uri} source_uri 
  * @param {vscode.Uri} dest_uri 
  */
 function handle_backend_error(error_code, source_uri, dest_uri) {
 	if (error_code == BACKEND_ERRORCODES.INVALID_PATH_SRC) {
-		vscode.window.showInformationMessage(`[ERROR] source file ${source_uri.fsPath} does not exist`)
+		vscode.window.showErrorMessage(`source file ${source_uri.fsPath} does not exist`)
 	} else if (error_code == BACKEND_ERRORCODES.INVALID_PATH_DST) {
-		vscode.window.showInformationMessage(`[ERROR] dest file ${dest_uri.fsPath} does not exist`)
+		vscode.window.showErrorMessage(`dest file ${dest_uri.fsPath} does not exist`)
 	} else if (error_code == BACKEND_ERRORCODES.SYNTAX_ERROR_SRC) {
-		vscode.window.showInformationMessage(`[ERROR] source file ${source_uri.fsPath} is not a valid python file`)
+		vscode.window.showErrorMessage(`source file ${source_uri.fsPath} is not a valid python file`)
 	} else if (error_code == BACKEND_ERRORCODES.SYNTAX_ERROR_DST) {
-		vscode.window.showInformationMessage(`[ERROR] dest file ${dest_uri.fsPath} is not a valid python file`)
+		vscode.window.showErrorMessage(`dest file ${dest_uri.fsPath} is not a valid python file`)
 	}
 }
 
