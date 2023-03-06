@@ -134,12 +134,21 @@ function get_actions_and_ranges(json, src_editor, dst_editor) {
 		var obj = json.actions[i]
 		const range_re = /.*\[(\d\d?),(\d\d?)\]/
 		let matches = obj["tree"].match(range_re)
+		if (matches == null) { // TODO: maybe delete later
+			console.log("FOUND BAD MATCH")
+			console.log(obj)
+			continue
+		}
 		let range_base = matches[1]
 		let range_end = matches[2]
 		let range
 		// TODO: add more actions
 		if (obj["action"] === "delete-tree" || obj["action"] === "delete-node") {
-			range = offset_to_range(Number(range_base), Number(range_end), src_editor)
+			range = offset_to_range(Number(range_base), Number(range_end) + 1, src_editor)
+		} else if (obj["action"] === "insert-tree" || obj["action"] === "insert-node") {
+			range = offset_to_range(Number(range_base), Number(range_end) + 1, dst_editor)
+		} else {
+			continue
 		}
 		actions_and_ranges.push({action: obj["action"], range: range})
 	}
@@ -186,13 +195,18 @@ function offset_to_range(range_base, range_end, editor) {
  */
 function decorate_actions(actions_and_ranges, src_editor, dst_editor) {
 	let redArray = []
+	let greenArray = []
 	for (let i = 0; i < actions_and_ranges.length; i++) {
 		// TODO: add more actions
 		if (actions_and_ranges[i]["action"] === "delete-tree" || actions_and_ranges[i]["action"] === "delete-node") {
 			redArray.push(actions_and_ranges[i]["range"])
 		}
+		if (actions_and_ranges[i]["action"] === "insert-tree" || actions_and_ranges[i]["action"] === "insert-node") {
+			greenArray.push(actions_and_ranges[i]["range"])
+		}
 	}
 	src_editor.setDecorations(redType, redArray)
+	dst_editor.setDecorations(greenType, greenArray)
 }
 
 const greenType = vscode.window.createTextEditorDecorationType({
