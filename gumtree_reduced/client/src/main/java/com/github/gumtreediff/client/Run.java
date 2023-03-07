@@ -37,6 +37,7 @@ import org.atteo.classindex.ClassIndex;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
+import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
 
 
@@ -131,6 +132,8 @@ public class Run {
         try {
             src = new PythonTreeGenerator().generateFrom().file(args[0]);
         } catch (InvalidPathException e) {
+            System.exit(ErrorCodes.INVALID_PATH_SRC.ordinal());
+        } catch (NoSuchFileException e) {
             System.exit(ErrorCodes.INVALID_PATH_SRC.ordinal());
         } catch (SyntaxException e) {
             System.exit(ErrorCodes.SYNTAX_ERROR_SRC.ordinal());

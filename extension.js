@@ -89,7 +89,7 @@ function execute_backend(source_uri, dest_uri) {
 	classpath = classpath.concat(`${__dirname}\\gumtree_reduced\\core\\build\\classes\\java\\main;`)
 	classpath = classpath.concat(`${__dirname}\\gumtree_reduced\\gen.python\\build\\classes\\java\\main;`)
 	classpath = classpath.concat(`${__dirname}\\gumtree_reduced\\external_jars\\*\"`)
-	let command = `java.exe -cp ${classpath} com.github.gumtreediff.client.Run ${source_uri.fsPath} ${dest_uri.fsPath}`
+	let command = `java.exe -cp ${classpath} com.github.gumtreediff.client.Run "${source_uri.fsPath}" "${dest_uri.fsPath}"`
 	
 	let json_str = ""
 	try {
