@@ -105,7 +105,8 @@ public final class ActionsIoUtils {
                 Tree src = a.getNode();
                 if (a instanceof Move) {
                     Tree dst = mappings.getDstForSrc(src);
-                    fmt.moveAction((Move) a, src, dst.getParent(), ((Move) a).getPosition());
+//                    fmt.moveAction((Move) a, src, dst.getParent(), ((Move) a).getPosition());
+                    fmt.moveAction((Move) a, src, dst, ((Move) a).getPosition());
                 } else if (a instanceof Update) {
                     Tree dst = mappings.getDstForSrc(src);
                     fmt.updateAction((Update) a, src, dst);
@@ -418,14 +419,16 @@ public final class ActionsIoUtils {
         @Override
         public void moveAction(Move action, Tree src, Tree dst, int index) throws IOException {
             start(action, src);
-            writer.name("parent").value(dst.toString());
-            writer.name("at").value(index);
+//            writer.name("parent").value(dst.toString());
+//            writer.name("at").value(index);
+            writer.name("to").value(dst.toString());
             end(src);
         }
 
         @Override
         public void updateAction(Update action, Tree src, Tree dst) throws IOException {
             start(action, src);
+            writer.name("to").value(dst.toString());
             writer.name("label").value(dst.getLabel());
             end(src);
         }
