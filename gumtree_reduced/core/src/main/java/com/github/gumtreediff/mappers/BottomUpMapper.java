@@ -68,7 +68,9 @@ public class BottomUpMapper extends AbstractMapper {
 
             for (Tree candidate : calculate_candidates(t1)) {
                 if (calculate_dice(new Pair<Tree,Tree>(t1, candidate)) > MIN_DICE) {
-                    mappings.addMapping(t1, candidate);
+                    if (mappings.isMappingAllowed(t1, candidate)) {
+                        mappings.addMapping(t1, candidate);
+                    }
                     if (Math.max(t1.getMetrics().size, candidate.getMetrics().size) < MAX_TREE_SIZE) {
                         RtedMatcher rted = new RtedMatcher();
                         MappingStore opt_mappings = rted.match(t1, candidate, new MappingStore(t1, candidate));
