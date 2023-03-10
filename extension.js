@@ -172,6 +172,8 @@ function get_actions_and_ranges(json, src_editor, dst_editor) {
 			range2 = offset_to_range(dst_json_offsets[0], dst_json_offsets[1], dst_editor)
 			actions_and_ranges.push({action: action["action"], ranges: [range1, range2]})
 		} else {
+			console.log("UNKNOWN ACTION")
+			console.log(action)
 			continue
 		}
 		
@@ -196,7 +198,7 @@ function offset_to_range(range_base, range_end, editor) {
 		if (i == range_base) {
 			source_line = current_line
 			source_offset_in_line = i - current_line_offset_in_file
-		} else if (i == range_end) {
+		} else if (i == range_end || i + 1 == data.length) {
 			dest_line = current_line
 			dest_offset_in_line = i - current_line_offset_in_file
 			break
