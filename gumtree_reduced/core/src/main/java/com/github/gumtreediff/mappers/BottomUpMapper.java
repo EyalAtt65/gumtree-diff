@@ -54,7 +54,15 @@ public class BottomUpMapper extends AbstractMapper {
             if (mappings.isSrcMapped(t1)) {
                 continue;
             }
-            if (!mappings.hasUnmappedSrcChildren(t1)) {
+
+            boolean has_mapped_children = false;
+            for (Tree child : t1.getChildren()) {
+                if (mappings.isSrcMapped(child)) {
+                    has_mapped_children = true;
+                    break;
+                }
+            }
+            if (!has_mapped_children) {
                 continue;
             }
 
