@@ -58,6 +58,7 @@ function handle_diff(source_uri, dest_uri) {
 		vscode.commands.executeCommand('setContext', 'gumtree-diff.source_selected', false);
 		return
 	}
+	console.log(json_str)
 	let out_json = JSON.parse(json_str)
 
 	vscode.workspace.openTextDocument(source_uri).then(src_doc => {
@@ -132,7 +133,7 @@ function get_actions_and_ranges(json, src_editor, dst_editor) {
 	let actions_and_ranges = []
 	for (var i = 0; i < json.actions.length; i++) {
 		var obj = json.actions[i]
-		const range_re = /.*\[(\d\d?),(\d\d?)\]/
+		const range_re = /.*\[(\d+),(\d+)\]/
 		let matches = obj["tree"].match(range_re)
 		if (matches == null) { // TODO: maybe delete later
 			console.log("FOUND BAD MATCH")
@@ -147,7 +148,9 @@ function get_actions_and_ranges(json, src_editor, dst_editor) {
 			range = offset_to_range(Number(range_base), Number(range_end) + 1, src_editor)
 		} else if (obj["action"] === "insert-tree" || obj["action"] === "insert-node") {
 			range = offset_to_range(Number(range_base), Number(range_end) + 1, dst_editor)
-		} else {
+		} else { // TODO: maybe delete later
+			console.log("UNSUPPORTED ACTION")
+			console.log(obj)
 			continue
 		}
 		actions_and_ranges.push({action: obj["action"], range: range})
