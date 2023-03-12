@@ -2,6 +2,9 @@ const vscode = require('vscode');
 const process = require("process");
 const { execSync } = require("child_process");
 const path = require('node:path');
+const fs = require('fs');
+
+const CONFIG_FILE = "config.json"
 
 const BACKEND_ERRORCODES = {
 	SUCCESS: 0,
@@ -77,6 +80,15 @@ function handle_diff(source_uri, dest_uri) {
 }
 
 /**
+ * @returns {string}
+ */
+function get_pythonparser() {
+	let rawdata = fs.readFileSync(path.join(__dirname, CONFIG_FILE));
+	let config = JSON.parse(rawdata.toString());
+	return config["pythonparser"]
+}
+
+/**
  * @param {vscode.Uri} source_uri 
  * @param {vscode.Uri} dest_uri 
  * @returns
@@ -84,25 +96,15 @@ function handle_diff(source_uri, dest_uri) {
 function execute_backend(source_uri, dest_uri) {
 	let is_windows = process.platform === "win32";
 
-	let path_delimiter
-	if (is_windows) {
-		path_delimiter = ";"
-	} else {
-		path_delimiter = ":"
-	}
+	let path_delimiter = is_windows ? ";" : ":"
+	let classpath = "\"".concat(path.join(__dirname, "gumtree_reduced", "client", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(__dirname, "gumtree_reduced", "core", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(__dirname, "gumtree_reduced", "gen.python", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(__dirname, "gumtree_reduced", "external_jars", "*"), "\"")
 
-	let classpath = "\"".concat(path.join(`${__dirname}`, "gumtree_reduced", "client", "build", "classes", "java", "main"), path_delimiter)
-	classpath = classpath.concat(path.join(`${__dirname}`, "gumtree_reduced", "core", "build", "classes", "java", "main"), path_delimiter)
-	classpath = classpath.concat(path.join(`${__dirname}`, "gumtree_reduced", "gen.python", "build", "classes", "java", "main"), path_delimiter)
-	classpath = classpath.concat(path.join(`${__dirname}`, "gumtree_reduced", "external_jars", "*"), "\"")
-
-	let java_exec
-	if (is_windows) {
-		java_exec = "java.exe"
-	} else {
-		java_exec = "java"
-	}
-	let command = `${java_exec} -cp ${classpath} com.github.gumtreediff.client.Run "${source_uri.fsPath}" "${dest_uri.fsPath}"`
+	let java_exec = is_windows ? "java.exe" : "java"
+	let pythonparser = get_pythonparser()
+	let command = `${java_exec} -cp ${classpath} com.github.gumtreediff.client.Run "${source_uri.fsPath}" "${dest_uri.fsPath}" "${pythonparser}"`
 	
 	let json_str = ""
 	try {
@@ -361,20 +363,29 @@ function decorate_actions(actions_and_ranges, src_editor, dst_editor) {
 
 const greenType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: '#196719',
-	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+	// overviewRulerColor: '#196719',
+	// overviewRulerLane: vscode.OverviewRulerLane.Center
 	// isWholeLine: true,
 	})
 const redType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: 'maroon',
-	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
+	// overviewRulerColor: 'maroon',
+	// overviewRulerLane: vscode.OverviewRulerLane.Center
 	// isWholeLine: true,
 	})
 const yellowType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: '#666600',
+	// overviewRulerColor: '#666600',
+	// overviewRulerLane: vscode.OverviewRulerLane.Left,
 	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
+	
 	})
 const blueType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: 'blue',
+	// overviewRulerColor: 'blue',
+	// overviewRulerLane: vscode.OverviewRulerLane.Right,
 	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 	})
 

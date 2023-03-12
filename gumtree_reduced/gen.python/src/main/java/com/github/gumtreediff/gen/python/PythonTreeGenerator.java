@@ -29,7 +29,10 @@ import java.io.*;
 
 @Register(id = "python-pythonparser", accept = {"\\.py$"}, priority = Registry.Priority.MAXIMUM)
 public class PythonTreeGenerator extends ExternalProcessTreeGenerator {
-    private static final String PYTHONPARSER_CMD = System.getProperty("gt.pp.path", "C:\\project\\pythonparser\\pythonparser.bat");
+    private static String PYTHONPARSER_CMD;
+    public PythonTreeGenerator(String pythonparser) {
+        PYTHONPARSER_CMD = pythonparser;
+    }
 
     @Override
     public TreeContext generate(Reader r) throws IOException {

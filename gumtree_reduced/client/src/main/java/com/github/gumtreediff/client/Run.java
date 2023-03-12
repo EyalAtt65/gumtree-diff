@@ -133,7 +133,7 @@ public class Run {
 
         String[] args = Option.processCommandLine(origArgs, opts);
         try {
-            src = new PythonTreeGenerator().generateFrom().file(args[0]);
+            src = new PythonTreeGenerator(args[2]).generateFrom().file(args[0]);
         } catch (InvalidPathException e) {
             System.exit(ErrorCodes.INVALID_PATH_SRC.ordinal());
         } catch (NoSuchFileException e) {
@@ -146,7 +146,7 @@ public class Run {
         }
 
         try {
-            dst = new PythonTreeGenerator().generateFrom().file(args[1]);
+            dst = new PythonTreeGenerator(args[2]).generateFrom().file(args[1]);
         } catch (InvalidPathException e) {
             System.exit(ErrorCodes.INVALID_PATH_DST.ordinal());
         } catch (SyntaxException e) {

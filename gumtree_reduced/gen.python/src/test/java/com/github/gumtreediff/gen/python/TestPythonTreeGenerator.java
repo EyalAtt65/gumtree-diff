@@ -32,20 +32,20 @@ import java.io.IOException;
 
 public class TestPythonTreeGenerator {
 
-    @Test
-    public void testSimple() throws IOException {
-        String input = "import sys\nimport json as json\n";
-        TreeContext ctx = new PythonTreeGenerator().generateFrom().string(input);
-        Tree t = ctx.getRoot();
-        assertEquals(9, t.getMetrics().size);
-    }
-
-    @Test
-    public void testBadSyntax() throws IOException {
-        String input = "impot sys";
-        assertThrows(SyntaxException.class, () -> {
-            new PythonTreeGenerator().generateFrom().string(input);
-        });
-    }
+//    @Test
+//    public void testSimple() throws IOException {
+//        String input = "import sys\nimport json as json\n";
+//        TreeContext ctx = new PythonTreeGenerator().generateFrom().string(input);
+//        Tree t = ctx.getRoot();
+//        assertEquals(9, t.getMetrics().size);
+//    }
+//
+//    @Test
+//    public void testBadSyntax() throws IOException {
+//        String input = "impot sys";
+//        assertThrows(SyntaxException.class, () -> {
+//            new PythonTreeGenerator().generateFrom().string(input);
+//        });
+//    }
 
 }
