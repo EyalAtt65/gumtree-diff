@@ -201,6 +201,7 @@ function get_actions_and_ranges(json, src_editor, dst_editor) {
  */
 function offset_to_range(range_base, range_end, editor) {
 	const data = editor.document.getText()
+	let is_crlf = editor.document.eol === vscode.EndOfLine.CRLF
 
 	let source_line, source_offset_in_line, dest_line, dest_offset_in_line
 	let current_line = 0
@@ -216,11 +217,13 @@ function offset_to_range(range_base, range_end, editor) {
 		}
 		if (data[i] === '\n') {
 			current_line++
-			if (i > 0 && data[i - 1] === '\r') {
-				current_line_offset_in_file = i
-			} else {
-				current_line_offset_in_file = i + 1 // if current char is newline, then the next line starts on next char
+			if (is_crlf) {
+				/* Gumtree doesn't handle \r in the ranges we get, so each new line we find means there's another \r it ignored, which
+				 * pushes the offsets by 1 */
+				range_base++
+				range_end++
 			}
+			current_line_offset_in_file = i + 1 // if current char is newline, then the next line starts on next char
 		}
 	}
 
