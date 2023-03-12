@@ -1,16 +1,15 @@
 const vscode = require('vscode');
 const process = require("process");
 const { execSync } = require("child_process");
-const { off, cpuUsage } = require('process');
-const { reduceEachLeadingCommentRange } = require('typescript');
+const path = require('node:path');
 
-const JDK_DIR = "c:\\Program Files\\Java\\jdk-17\\bin"
 const BACKEND_ERRORCODES = {
 	SUCCESS: 0,
 	SYNTAX_ERROR_SRC: 1,
 	SYNTAX_ERROR_DST: 2,
 	INVALID_PATH_SRC: 3,
-	INVALID_PATH_DST: 4
+	INVALID_PATH_DST: 4,
+	PYTHONPARSER_NOT_FOUND: 5
 }
 
 /**
@@ -64,12 +63,8 @@ function handle_diff(source_uri, dest_uri) {
 
 	vscode.workspace.openTextDocument(source_uri).then(src_doc => {
 		vscode.window.showTextDocument(src_doc).then(src_editor => {
-			// TODO: maybe delete
-			src_editor.edit(builder => {builder.setEndOfLine(vscode.EndOfLine.LF)})
 			vscode.workspace.openTextDocument(dest_uri).then(dest_doc => {
 				vscode.window.showTextDocument(dest_doc, {viewColumn: vscode.ViewColumn.Beside}).then(dest_editor => {
-					// TODO: maybe delete
-					dest_editor.edit(builder => {builder.setEndOfLine(vscode.EndOfLine.LF)})
 					let actions_and_ranges = get_actions_and_ranges(out_json, src_editor, dest_editor)
 					decorate_actions(actions_and_ranges, src_editor, dest_editor)
 				})
@@ -87,21 +82,33 @@ function handle_diff(source_uri, dest_uri) {
  * @returns
  */
 function execute_backend(source_uri, dest_uri) {
-	const current_path = process.env.PATH;
-	const new_path = current_path.concat(";", JDK_DIR)
-	process.env["PATH"] = new_path
+	let is_windows = process.platform === "win32";
 
-	let classpath = `\"${__dirname}\\gumtree_reduced\\client\\build\\classes\\java\\main;`
-	classpath = classpath.concat(`${__dirname}\\gumtree_reduced\\core\\build\\classes\\java\\main;`)
-	classpath = classpath.concat(`${__dirname}\\gumtree_reduced\\gen.python\\build\\classes\\java\\main;`)
-	classpath = classpath.concat(`${__dirname}\\gumtree_reduced\\external_jars\\*\"`)
-	let command = `java.exe -cp ${classpath} com.github.gumtreediff.client.Run "${source_uri.fsPath}" "${dest_uri.fsPath}"`
+	let path_delimiter
+	if (is_windows) {
+		path_delimiter = ";"
+	} else {
+		path_delimiter = ":"
+	}
+
+	let classpath = "\"".concat(path.join(`${__dirname}`, "gumtree_reduced", "client", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(`${__dirname}`, "gumtree_reduced", "core", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(`${__dirname}`, "gumtree_reduced", "gen.python", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(`${__dirname}`, "gumtree_reduced", "external_jars", "*"), "\"")
+
+	let java_exec
+	if (is_windows) {
+		java_exec = "java.exe"
+	} else {
+		java_exec = "java"
+	}
+	let command = `${java_exec} -cp ${classpath} com.github.gumtreediff.client.Run "${source_uri.fsPath}" "${dest_uri.fsPath}"`
 	
 	let json_str = ""
 	try {
 		json_str = execSync(command).toString()
 	} catch (error) {
-		handle_backend_error(error.status, source_uri, dest_uri)
+		handle_backend_error(error, source_uri, dest_uri)
 	}
 	
 	return json_str
@@ -109,19 +116,21 @@ function execute_backend(source_uri, dest_uri) {
 }
 
 /**
- * @param {Number} error_code 
+ * @param {*} error 
  * @param {vscode.Uri} source_uri 
  * @param {vscode.Uri} dest_uri 
  */
-function handle_backend_error(error_code, source_uri, dest_uri) {
-	if (error_code == BACKEND_ERRORCODES.INVALID_PATH_SRC) {
-		vscode.window.showErrorMessage(`source file ${source_uri.fsPath} does not exist`)
-	} else if (error_code == BACKEND_ERRORCODES.INVALID_PATH_DST) {
-		vscode.window.showErrorMessage(`dest file ${dest_uri.fsPath} does not exist`)
-	} else if (error_code == BACKEND_ERRORCODES.SYNTAX_ERROR_SRC) {
-		vscode.window.showErrorMessage(`source file ${source_uri.fsPath} is not a valid python file`)
-	} else if (error_code == BACKEND_ERRORCODES.SYNTAX_ERROR_DST) {
-		vscode.window.showErrorMessage(`dest file ${dest_uri.fsPath} is not a valid python file`)
+function handle_backend_error(error, source_uri, dest_uri) {
+	if (error.status == BACKEND_ERRORCODES.INVALID_PATH_SRC) {
+		vscode.window.showErrorMessage(`Source file ${source_uri.fsPath} does not exist`)
+	} else if (error.status == BACKEND_ERRORCODES.INVALID_PATH_DST) {
+		vscode.window.showErrorMessage(`Destination file ${dest_uri.fsPath} does not exist`)
+	} else if (error.status == BACKEND_ERRORCODES.SYNTAX_ERROR_SRC) {
+		vscode.window.showErrorMessage(`Source file ${source_uri.fsPath} is not a valid python file`)
+	} else if (error.status == BACKEND_ERRORCODES.SYNTAX_ERROR_DST) {
+		vscode.window.showErrorMessage(`Destination file ${dest_uri.fsPath} is not a valid python file`)
+	} else if (error.status == BACKEND_ERRORCODES.PYTHONPARSER_NOT_FOUND) {
+		vscode.window.showErrorMessage(`Cannot find pythonparser. ${error.stderr.toString()}`)
 	}
 }
 
@@ -205,7 +214,11 @@ function offset_to_range(range_base, range_end, editor) {
 		}
 		if (data[i] === '\n') {
 			current_line++
-			current_line_offset_in_file = i + 1 // if current char is newline, then the next line starts on next char
+			if (i > 0 && data[i - 1] === '\r') {
+				current_line_offset_in_file = i
+			} else {
+				current_line_offset_in_file = i + 1 // if current char is newline, then the next line starts on next char
+			}
 		}
 	}
 
@@ -348,17 +361,21 @@ function decorate_actions(actions_and_ranges, src_editor, dst_editor) {
 
 const greenType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: '#196719',
+	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 	// isWholeLine: true,
 	})
 const redType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: 'maroon',
+	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 	// isWholeLine: true,
 	})
 const yellowType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: '#666600',
+	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 	})
 const blueType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: 'blue',
+	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
 	})
 
 
