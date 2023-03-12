@@ -35,6 +35,8 @@ import com.github.gumtreediff.gen.TreeGenerator;
 import org.atteo.classindex.ClassIndex;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOError;
 import java.io.IOException;
 import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
@@ -47,7 +49,8 @@ public class Run {
         SYNTAX_ERROR_SRC, // 1
         SYNTAX_ERROR_DST, // 2
         INVALID_PATH_SRC, // 3
-        INVALID_PATH_DST // 4
+        INVALID_PATH_DST, // 4
+        PYTHONPARSER_NOT_FOUND // 5
     }
     public static class Options implements Option.Context {
         @Override
@@ -124,7 +127,7 @@ public class Run {
 //        }
 //    }
 
-    public static void main(String[] origArgs) throws IOException, Exception {
+    public static void main(String[] origArgs) throws IOException, Exception, FileNotFoundException {
         Options opts = new Options();
         TreeContext src = null, dst = null;
 
@@ -137,6 +140,9 @@ public class Run {
             System.exit(ErrorCodes.INVALID_PATH_SRC.ordinal());
         } catch (SyntaxException e) {
             System.exit(ErrorCodes.SYNTAX_ERROR_SRC.ordinal());
+        } catch (IOException e) {
+            System.err.printf(e.getMessage());
+            System.exit(ErrorCodes.PYTHONPARSER_NOT_FOUND.ordinal());
         }
 
         try {

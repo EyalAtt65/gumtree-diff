@@ -29,9 +29,6 @@ import java.io.*;
 
 @Register(id = "python-pythonparser", accept = {"\\.py$"}, priority = Registry.Priority.MAXIMUM)
 public class PythonTreeGenerator extends ExternalProcessTreeGenerator {
-
-//    private static final String PYTHONPARSER_CMD = System.getProperty("gt.pp.path", "pythonparser");
-//    private static final String PYTHONPARSER_CMD = System.getProperty("gt.pp.path", "C:\\project\\pythonparser\\dist\\pythonparser.exe");
     private static final String PYTHONPARSER_CMD = System.getProperty("gt.pp.path", "C:\\project\\pythonparser\\pythonparser.bat");
 
     @Override
