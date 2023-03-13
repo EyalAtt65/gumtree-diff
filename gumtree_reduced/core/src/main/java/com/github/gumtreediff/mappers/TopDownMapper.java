@@ -33,9 +33,9 @@ public class TopDownMapper extends AbstractMapper {
     }
 
     /**
-     * Structure is the same, same type. */
+     * Structure is the same, same type, different label. */
     public boolean are_almost_isomorphic_nodes(Tree t1, Tree t2) {
-        return t1.isIsoStructuralTo(t2) && t1.hasSameType(t2);
+        return t1.isIsoStructuralTo(t2) && t1.hasSameType(t2) && !(t1.getLabel().equals(t2.getLabel()));
     }
 
     /**
