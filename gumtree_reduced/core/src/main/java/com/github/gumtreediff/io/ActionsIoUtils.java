@@ -429,7 +429,8 @@ public final class ActionsIoUtils {
         public void updateAction(Update action, Tree src, Tree dst) throws IOException {
             start(action, src);
             writer.name("to").value(dst.toString());
-            writer.name("label").value(dst.getLabel());
+            writer.name("old_label").value(src.getLabel());
+            writer.name("new_label").value(dst.getLabel());
             end(src);
         }
 
