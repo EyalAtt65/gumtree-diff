@@ -27,16 +27,32 @@ public class TopDownMapper extends AbstractMapper {
     }
 
     /**
-     * Returns a list of pairs, of all isomorphic descendants of t1 and t2. */
-    public List<Pair<Tree, Tree>> get_isomorphic_descendants(Tree t1, Tree t2) {
+     * Structure is the same, same type, same label. */
+    public boolean are_isomorphic_nodes(Tree t1, Tree t2) {
+        return t1.isIsoStructuralTo(t2) && t1.hasSameTypeAndLabel(t2);
+    }
+
+    /**
+     * Structure is the same, same type. */
+    public boolean are_almost_isomorphic_nodes(Tree t1, Tree t2) {
+        return t1.isIsoStructuralTo(t2) && t1.hasSameType(t2);
+    }
+
+    /**
+     * Returns a list of pairs, of all isomorphic descendants of t1 and t2.
+     * almost_isomorphic determines if this function will use are_isomorphic_nodes or are_almost_isomorphic_nodes. */
+    public List<Pair<Tree, Tree>> get_isomorphic_descendants(Tree t1, Tree t2, boolean almost_isomorphic) {
         List<Pair<Tree, Tree>> out = new ArrayList<>();
         for (Tree descendant1 : t1.getDescendants()) {
             for (Tree descendant2 : t2.getDescendants()) {
-                /* TODO: I have found nodes where I would say they are isomorphic but isIsomorphicTo returned false,
-                    and the strcutreHash was the same. So currently going with structureHash. */
-//                if (descendant1.isIsomorphicTo(descendant2)) {
-                if (descendant1.getMetrics().structureHash == descendant2.getMetrics().structureHash) {
-                    out.add(new Pair<>(descendant1, descendant2));
+                if (almost_isomorphic) {
+                    if (are_almost_isomorphic_nodes(descendant1, descendant2)) {
+                        out.add(new Pair<>(descendant1, descendant2));
+                    }
+                } else {
+                    if (are_isomorphic_nodes(descendant1, descendant2)) {
+                        out.add(new Pair<>(descendant1, descendant2));
+                    }
                 }
             }
         }
@@ -44,10 +60,9 @@ public class TopDownMapper extends AbstractMapper {
     }
 
     public boolean exists_other_isomorphic_node(Tree t1, Tree t2, Tree Tree2) {
-        for (Tree tx : Tree2.preOrder()) { // TODO: maybe not optimal?
+        for (Tree tx : Tree2.preOrder()) {
             if (tx.getMetrics().hash != t2.getMetrics().hash) {
-//                if (t1.isIsomorphicTo(tx)) {
-                if (t1.getMetrics().structureHash == tx.getMetrics().structureHash) {
+                if (are_isomorphic_nodes(t1, tx)) {
                     return true;
                 }
             }
@@ -89,14 +104,11 @@ public class TopDownMapper extends AbstractMapper {
             Pair<Tree, Tree> p = candidates.get(0);
             candidates.remove(0);
 
-            if (mappings.isMappingAllowed(p.first, p.second)) {
-                mappings.addMapping(p.first, p.second);
-            }
-            List<Pair<Tree, Tree>> iso_pairs = get_isomorphic_descendants(p.first, p.second);
+            add_mapping_if_allowed(p.first, p.second);
+
+            List<Pair<Tree, Tree>> iso_pairs = get_isomorphic_descendants(p.first, p.second, false);
             for (Pair<Tree, Tree> iso_pair : iso_pairs) {
-                if (mappings.isMappingAllowed(iso_pair.first, iso_pair.second)) {
-                    mappings.addMapping(iso_pair.first, iso_pair.second);
-                }
+                add_mapping_if_allowed(iso_pair.first, iso_pair.second);
             }
 
             candidates.removeIf(candidate -> candidate.first == p.first || candidate.second == p.second);
@@ -129,21 +141,23 @@ public class TopDownMapper extends AbstractMapper {
                 ArrayList<Tree> H2 = dst_pq.pop_list();
                 for (Pair<Tree, Tree> p : tree_cartesian_product(H1, H2)) {
                     /* t1 = p.first ; t2 = p.second */
-//                    if (p.first.isIsomorphicTo(p.second)) {
-                    if (p.first.getMetrics().structureHash == p.second.getMetrics().structureHash) {
+                    if (are_isomorphic_nodes(p.first, p.second)) {
                         if (exists_other_isomorphic_node(p.first, p.second, dst) ||
                             exists_other_isomorphic_node(p.second, p.first, src)) {
                             candidates.add(p);
                         } else {
-                            if (mappings.isMappingAllowed(p.first, p.second)) {
-                                mappings.addMapping(p.first, p.second);
+                            add_mapping_if_allowed(p.first, p.second);
+                            for (Pair<Tree, Tree> iso_pair : get_isomorphic_descendants(p.first, p.second, false)) {
+                                add_mapping_if_allowed(iso_pair.first, iso_pair.second);
                             }
-                            for (Pair<Tree, Tree> iso_pair : get_isomorphic_descendants(p.first, p.second)) {
-                                if (mappings.isMappingAllowed(iso_pair.first, iso_pair.second)) {
-                                    mappings.addMapping(iso_pair.first, iso_pair.second);
-                                }
+                            /* almost_isomorphic nodes are candidates for "update" actions */
+                            for (Pair<Tree, Tree> iso_pair : get_isomorphic_descendants(p.first, p.second, true)) {
+                                candidates.add(iso_pair);
                             }
                         }
+                    /* almost_isomorphic nodes are candidates for "update" actions */
+                    } else if (are_almost_isomorphic_nodes(p.first, p.second)) {
+                        candidates.add(p);
                     }
                 }
 

@@ -40,8 +40,7 @@ public class BottomUpMapper extends AbstractMapper {
             Tree current = dst_descendant;
             while (current.getParent() != null) {
                 Tree parent = current.getParent();
-                // TODO: should this be getLabel or getType?
-                if (parent.getType() == t1.getType() && !(mappings.isDstMapped(parent)) || parent.isRoot()) {
+                if (parent.hasSameTypeAndLabel(t1) && !(mappings.isDstMapped(parent)) || parent.isRoot()) {
                     candidates.add(parent);
                 }
                 current = parent;
@@ -49,33 +48,36 @@ public class BottomUpMapper extends AbstractMapper {
         }
         return candidates;
     }
+    private boolean src_has_mapped_children(Tree t1) {
+        boolean has_mapped_children = false;
+        for (Tree child : t1.getChildren()) {
+            if (mappings.isSrcMapped(child)) {
+                has_mapped_children = true;
+                break;
+            }
+        }
+        return has_mapped_children;
+    }
+
     public MappingStore map() {
         for (Tree t1 : src.postOrder()) {
             if (mappings.isSrcMapped(t1)) {
                 continue;
             }
 
-            boolean has_mapped_children = false;
-            for (Tree child : t1.getChildren()) {
-                if (mappings.isSrcMapped(child)) {
-                    has_mapped_children = true;
-                    break;
-                }
-            }
-            if (!has_mapped_children) {
+            if (!src_has_mapped_children(t1)) {
                 continue;
             }
 
             for (Tree candidate : calculate_candidates(t1)) {
-                if (calculate_dice(new Pair<Tree,Tree>(t1, candidate)) > MIN_DICE) {
-                    if (mappings.isMappingAllowed(t1, candidate)) {
-                        mappings.addMapping(t1, candidate);
-                    }
+                if (calculate_dice(new Pair<Tree, Tree>(t1, candidate)) > MIN_DICE) {
+                    add_mapping_if_allowed(t1, candidate);
+
                     if (Math.max(t1.getMetrics().size, candidate.getMetrics().size) < MAX_TREE_SIZE) {
                         RtedMatcher rted = new RtedMatcher();
                         MappingStore opt_mappings = rted.match(t1, candidate, new MappingStore(t1, candidate));
                         /* TODO: paper uses RTED but gumtree uses Zs. Leaving this commented out in case we ever
-                        *   want to experiment with Zs. */
+                         *   want to experiment with Zs. */
 //                        ZsMatcher zs = new ZsMatcher();
 //                        MappingStore opt_mappings = zs.match(t1, candidate, new MappingStore(t1, candidate));
 
@@ -83,9 +85,7 @@ public class BottomUpMapper extends AbstractMapper {
                             if (mappings.has(m.first, m.second)) {
                                 continue;
                             }
-                            if (mappings.isMappingAllowed(m.first, m.second)) {
-                                mappings.addMapping(m.first, m.second);
-                            }
+                            add_mapping_if_allowed(m.first, m.second);
                         }
                     }
                     break;

@@ -9,6 +9,13 @@ public abstract class AbstractMapper {
     protected Tree dst;
     protected MappingStore mappings;
     public abstract MappingStore map();
+
+    protected void add_mapping_if_allowed(Tree t1, Tree t2) {
+        if (mappings.isMappingAllowed(t1, t2)) {
+            mappings.addMapping(t1, t2);
+        }
+    }
+
     protected double calculate_dice(Pair<Tree, Tree> p) {
         int num_descendants1 = p.first.getDescendants().size();
         int num_descendants2 = p.second.getDescendants().size();

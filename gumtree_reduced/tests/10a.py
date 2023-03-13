@@ -1,0 +1,21 @@
+"""
+Docstring
+"""
+
+import logging
+  
+def main(arg1, arg2=None):
+    print(arg1)
+    if arg2 is not None:
+        for i in range(arg2):
+            logging.debug(i)
+            print(arg1 * 2)
+            arg1 += 5
+
+    foo()
+
+def foo():
+    a = 1
+    b = []
+    a *= 7
+    logging.info(b)
