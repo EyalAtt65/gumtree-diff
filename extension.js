@@ -160,28 +160,36 @@ function match_range_from_json_action(action, field_name) {
  * {action: String, tree: String}>}} json
  * @param {vscode.TextEditor} src_editor 
  * @param {vscode.TextEditor} dst_editor 
- * @returns {Array.<{action: string, range: vscode.Range}|{action: string, ranges:vscode.Range[]}>}
+ * @returns {Array.<{action: string, range: vscode.Range}|{action: string, ranges:vscode.Range[]}|{action: string, ranges:vscode.Range[], labels:[string, string]}>}
  */
 function get_actions_and_ranges(json, src_editor, dst_editor) {
-	let actions_and_ranges = []
+	let actions = []
 	for (var i = 0; i < json.actions.length; i++) {
 		var action = json.actions[i]
 		let src_json_offsets, dst_json_offsets, range1, range2
-		// TODO: add more actions
+
 		if (["delete-tree", "delete-node"].includes(action["action"])) {
 			src_json_offsets = match_range_from_json_action(action, "tree")
 			range1 = offset_to_range(src_json_offsets[0], src_json_offsets[1], src_editor)
-			actions_and_ranges.push({action: action["action"], range: range1})
+			actions.push({action: action["action"], range: range1})
+
 		} else if (["insert-tree", "insert-node"].includes(action["action"])) {
 			dst_json_offsets = match_range_from_json_action(action, "tree")
 			range1 = offset_to_range(dst_json_offsets[0], dst_json_offsets[1], dst_editor)
-			actions_and_ranges.push({action: action["action"], range: range1})
+			actions.push({action: action["action"], range: range1})
+
 		} else if (["move-tree", "update-node"].includes(action["action"])) {
 			src_json_offsets = match_range_from_json_action(action, "tree")
 			dst_json_offsets = match_range_from_json_action(action, "to")
 			range1 = offset_to_range(src_json_offsets[0], src_json_offsets[1], src_editor)
 			range2 = offset_to_range(dst_json_offsets[0], dst_json_offsets[1], dst_editor)
-			actions_and_ranges.push({action: action["action"], ranges: [range1, range2]})
+			
+			if (action["action"] === "move-tree") {
+				actions.push({action: action["action"], ranges: [range1, range2]})
+			} else { // update
+				actions.push({action: action["action"], ranges: [range1, range2], labels: [action["old_label"], action["new_label"]]})
+			}
+
 		} else {
 			console.log("UNKNOWN ACTION")
 			console.log(action)
@@ -190,7 +198,7 @@ function get_actions_and_ranges(json, src_editor, dst_editor) {
 		
 	}
 
-	return actions_and_ranges
+	return actions
 }
 
 /**
@@ -233,39 +241,46 @@ function offset_to_range(range_base, range_end, editor) {
 
 /**
  * 
- * @param {vscode.Range[]} arr1 
- * @param {vscode.Range[]} arr2 
- * @returns {vscode.Range[]}
+ * @param {{range: vscode.Range, hoverMessage: string}[]} arr1 
+ * @param {{range: vscode.Range, hoverMessage: string}[]} arr2 
+ * @returns {{range: vscode.Range, hoverMessage: string}[]}
  */
 function handle_overlapping_ranges(arr1, arr2) {
 	let arr_out = []
 	while (arr1.length > 0) {
-		let curr_range = arr1.pop()
+		let curr_decoration = arr1.pop()
+		curr_decoration
+		let range1 = curr_decoration["range"]
 		let should_copy_element = true
 		for (let j = 0; j < arr2.length; j++) {
-			if (curr_range.start.isAfterOrEqual(arr2[j].end) || curr_range.end.isBeforeOrEqual(arr2[j].start)) {
+			let range2 = arr2[j]["range"]
+			if (range1.start.isAfterOrEqual(range2.end) || range1.end.isBeforeOrEqual(range2.start)) {
 				continue
-			} else if (curr_range.start.isAfterOrEqual(arr2[j].start) && curr_range.end.isBeforeOrEqual(arr2[j].end)) {
+			} else if (range1.start.isAfterOrEqual(range2.start) && range1.end.isBeforeOrEqual(range2.end)) {
 				should_copy_element = false
 				break
-			} else if (curr_range.start.isAfterOrEqual(arr2[j].start) && curr_range.end.isAfter(arr2[j].end)) {
+			} else if (range1.start.isAfterOrEqual(range2.start) && range1.end.isAfter(range2.end)) {
 				should_copy_element = false
-				arr1.push(new vscode.Range(arr2[j].end.line, arr2[j].end.character, curr_range.end.line, curr_range.end.character))
+				arr1.push({range: new vscode.Range(range2.end.line, range2.end.character, range1.end.line, range1.end.character),
+							hoverMessage: curr_decoration["hoverMessage"]})
 				break
-			} else if (curr_range.start.isBefore(arr2[j].start) && curr_range.end.isBeforeOrEqual(arr2[j].end)) {
+			} else if (range1.start.isBefore(range2.start) && range1.end.isBeforeOrEqual(range2.end)) {
 				should_copy_element = false
-				arr1.push(new vscode.Range(curr_range.start.line, curr_range.start.character, arr2[j].start.line, arr2[j].start.character))
+				arr1.push({range: new vscode.Range(range1.start.line, range1.start.character, range2.start.line, range2.start.character),
+							hoverMessage: curr_decoration["hoverMessage"]})
 				break
-			} else if (curr_range.start.isBefore(arr2[j].start) && curr_range.end.isAfter(arr2[j].end)) {
+			} else if (range1.start.isBefore(range2.start) && range1.end.isAfter(range2.end)) {
 				should_copy_element = false
-				arr1.push(new vscode.Range(curr_range.start.line, curr_range.start.character, arr2[j].start.line, arr2[j].start.character ))
-				arr1.push(new vscode.Range(arr2[j].end.line, arr2[j].end.character, curr_range.end.line, curr_range.end.character))
+				arr1.push({range: new vscode.Range(range1.start.line, range1.start.character, range2.start.line, range2.start.character),
+							hoverMessage: curr_decoration["hoverMessage"]})
+				arr1.push({range: new vscode.Range(range2.end.line, range2.end.character, range1.end.line, range1.end.character),
+							hoverMessage: curr_decoration["hoverMessage"]})
 				break
 			}
 		}
 
 		if (should_copy_element) {
-			arr_out.push(curr_range)
+			arr_out.push(curr_decoration)
 		}
 	}
 	return arr_out
@@ -305,46 +320,57 @@ function remove_redundant_ranges(arr) {
 
 /**
  * 
- * @param {Array.<{action: String, range: vscode.Range}|{action: string, ranges: vscode.Range[]}>} actions_and_ranges 
+ * @param {Array.<{action: String, range: vscode.Range}|
+ * {action: string, ranges: vscode.Range[]}|
+ * {action: string, ranges:vscode.Range[], labels:[string, string]}>} actions 
  * @param {vscode.TextEditor} src_editor 
  * @param {vscode.TextEditor} dst_editor 
  */
-function decorate_actions(actions_and_ranges, src_editor, dst_editor) {
+function decorate_actions(actions, src_editor, dst_editor) {
 	let redArray = []
 	let greenArray = []
 	let srcYellowArray = []
 	let srcBlueArray = []
 	let dstYellowArray = []
 	let dstBlueArray = []
-	for (let i = 0; i < actions_and_ranges.length; i++) {
-		// TODO: add more actions
-		switch (actions_and_ranges[i]["action"]) {
+	for (let i = 0; i < actions.length; i++) {
+		let action = actions[i]
+		let src_range, dst_range
+		switch (action["action"]) {
 			case "delete-tree":
 			case "delete-node":
-				redArray.push(actions_and_ranges[i]["range"])
+				redArray.push({range: action["range"], hoverMessage: null})
 				break
 			case "insert-tree":
 			case "insert-node":
-				greenArray.push(actions_and_ranges[i]["range"])
+				greenArray.push({range: action["range"], hoverMessage: null})
 				break
 			case "move-tree":
-				srcBlueArray.push(actions_and_ranges[i]["ranges"][0])
-				dstBlueArray.push(actions_and_ranges[i]["ranges"][1])
+				src_range = action["ranges"][0]
+				dst_range = action["ranges"][1]
+				srcBlueArray.push({range: src_range,
+					hoverMessage: `Tree was moved to line: ${dst_range.start.line + 1}, col: ${dst_range.start.character + 1} in destination file`})
+				dstBlueArray.push({range: dst_range,
+					hoverMessage: `Tree was moved from line: ${src_range.start.line + 1}, col: ${src_range.start.character + 1} in source file`})
 				break
 			case "update-node":
-				srcYellowArray.push(actions_and_ranges[i]["ranges"][0])
-				dstYellowArray.push(actions_and_ranges[i]["ranges"][1])
+				src_range = action["ranges"][0]
+				dst_range = action["ranges"][1]
+				srcYellowArray.push({range: src_range,
+					hoverMessage: `Label was updated to *${action["labels"][1]}* in the destination file`})
+				dstYellowArray.push({range: dst_range,
+					hoverMessage: `Label was updated from *${action["labels"][0]}* in the source file`})
 				break
 		}
 	}
 
-	srcBlueArray = remove_redundant_ranges(srcBlueArray)
-	srcYellowArray = remove_redundant_ranges(srcYellowArray)
-	redArray = remove_redundant_ranges(redArray)
+	// srcBlueArray = remove_redundant_ranges(srcBlueArray)
+	// srcYellowArray = remove_redundant_ranges(srcYellowArray)
+	// redArray = remove_redundant_ranges(redArray)
 
-	dstBlueArray = remove_redundant_ranges(dstBlueArray)
-	dstYellowArray = remove_redundant_ranges(dstYellowArray)
-	greenArray = remove_redundant_ranges(greenArray)
+	// dstBlueArray = remove_redundant_ranges(dstBlueArray)
+	// dstYellowArray = remove_redundant_ranges(dstYellowArray)
+	// greenArray = remove_redundant_ranges(greenArray)
 	
 	srcBlueArray = handle_overlapping_ranges(srcBlueArray, srcYellowArray)
 	redArray = handle_overlapping_ranges(redArray, srcYellowArray)
@@ -367,30 +393,29 @@ function decorate_actions(actions_and_ranges, src_editor, dst_editor) {
 const greenType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: '#196719',
 	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
-	// overviewRulerColor: '#196719',
-	// overviewRulerLane: vscode.OverviewRulerLane.Center
-	// isWholeLine: true,
-	})
+	overviewRulerColor: '#196719',
+	overviewRulerLane: vscode.OverviewRulerLane.Center,
+})
 const redType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: 'maroon',
 	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed,
-	// overviewRulerColor: 'maroon',
-	// overviewRulerLane: vscode.OverviewRulerLane.Center
-	// isWholeLine: true,
-	})
+	overviewRulerColor: 'maroon',
+	overviewRulerLane: vscode.OverviewRulerLane.Center,
+})
 const yellowType = vscode.window.createTextEditorDecorationType({
-	backgroundColor: '#666600',
+	// backgroundColor: '#666600',
+	border: "solid 0.5px orange",
 	// overviewRulerColor: '#666600',
-	// overviewRulerLane: vscode.OverviewRulerLane.Left,
+	overviewRulerColor: 'orange',
+	overviewRulerLane: vscode.OverviewRulerLane.Left,
 	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
-	
-	})
+})
 const blueType = vscode.window.createTextEditorDecorationType({
 	backgroundColor: 'blue',
-	// overviewRulerColor: 'blue',
-	// overviewRulerLane: vscode.OverviewRulerLane.Right,
+	overviewRulerColor: 'blue',
+	overviewRulerLane: vscode.OverviewRulerLane.Right,
 	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
-	})
+})
 
 
 // This method is called when your extension is deactivated
