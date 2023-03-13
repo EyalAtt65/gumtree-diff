@@ -13,6 +13,6 @@ def main(arg1, arg2=None):
             arg1 += 5
 
     a = 1
-    b = []
     a *= 7
+    b = []
     logging.info(b)

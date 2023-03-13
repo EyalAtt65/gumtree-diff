@@ -16,6 +16,6 @@ def main(arg1, arg2=None):
 
 def foo():
     a = 1
-    b = []
     a *= 7
+    b = []
     logging.info(b)
