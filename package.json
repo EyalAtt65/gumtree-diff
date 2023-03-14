@@ -32,6 +32,18 @@
           "when": "listDoubleSelection"
         }
 
+      ],
+      "editor/context": [
+        {
+          "command": "gumtree-diff.extract_edit_script",
+          "title": "GumTree diff: Extract Edit Script",
+          "when": "editorHasSelection && gumtree-diff.diff_displayed"
+        },
+        {
+          "command": "gumtree-diff.apply_edit_script",
+          "title": "GumTree diff: Apply Edit Script",
+          "when": "editorHasSelection && gumtree-diff.edit_script_extracted"
+        }
       ]
     },
     "commands": [
@@ -46,6 +58,14 @@
       {
         "command": "gumtree-diff.double_select",
         "title": "GumTree diff: Compare Selected"
+      },
+      {
+        "command": "gumtree-diff.extract_edit_script",
+        "title": "GumTree diff: Extract Edit Script"
+      },
+      {
+        "command": "gumtree-diff.apply_edit_script",
+        "title": "GumTree diff: Apply Edit Script"
       }
 
     ]

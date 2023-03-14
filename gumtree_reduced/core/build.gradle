@@ -9,6 +9,7 @@ dependencies {
 	implementation 'it.unimi.dsi:fastutil:8.3.1'
 	implementation 'com.google.code.gson:gson:2.8.2'
 	implementation 'org.jgrapht:jgrapht-core:1.5.1'
+	implementation('org.json:json:20211205')
 }
 
 pitest {

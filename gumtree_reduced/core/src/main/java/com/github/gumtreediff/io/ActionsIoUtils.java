@@ -117,7 +117,7 @@ public final class ActionsIoUtils {
                     else
                         fmt.insertAction((Insert) a, src, dst.getParent(), dst.getParent().getChildPosition(dst));
                 } else if (a instanceof Delete) {
-                    fmt.deleteAction((Delete) a, src);
+                    fmt.deleteAction2((Delete) a, src, mappings.getDstForSrc(src.getParent()));
                 } else if (a instanceof TreeInsert) {
                     Tree dst = a.getNode();
                     fmt.insertTreeAction((TreeInsert) a, src, dst.getParent(), dst.getParent().getChildPosition(dst));
@@ -157,6 +157,8 @@ public final class ActionsIoUtils {
         void updateAction(Update action, Tree src, Tree dst) throws Exception;
 
         void deleteAction(Delete action, Tree node) throws Exception;
+
+        void deleteAction2(Delete action, Tree node, Tree dstParent) throws Exception;
 
         void deleteTreeAction(TreeDelete action, Tree node) throws Exception;
 
@@ -247,6 +249,10 @@ public final class ActionsIoUtils {
             start(action, node);
             end(node);
         }
+        @Override
+        public void deleteAction2(Delete action, Tree node, Tree dstParent) throws Exception {
+            return;
+        }
 
         @Override
         public void deleteTreeAction(TreeDelete action, Tree node) throws Exception {
@@ -334,6 +340,11 @@ public final class ActionsIoUtils {
         }
 
         @Override
+        public void deleteAction2(Delete action, Tree node, Tree dstParent) throws Exception {
+            return;
+        }
+
+        @Override
         public void deleteTreeAction(TreeDelete action, Tree node) throws Exception {
             write(action.toString());
         }
@@ -405,6 +416,7 @@ public final class ActionsIoUtils {
             start(action, node);
             writer.name("parent").value(parent.toString());
             writer.name("at").value(index);
+            writer.name("label").value(node.getLabel());
             end(node);
         }
 
@@ -419,8 +431,9 @@ public final class ActionsIoUtils {
         @Override
         public void moveAction(Move action, Tree src, Tree dst, int index) throws IOException {
             start(action, src);
-//            writer.name("parent").value(dst.toString());
-//            writer.name("at").value(index);
+            writer.name("from-at").value(src.getParent().getChildPosition(src));
+            writer.name("parent").value(dst.getParent().toString());
+            writer.name("at").value(index);
             writer.name("to").value(dst.toString());
             end(src);
         }
@@ -439,6 +452,14 @@ public final class ActionsIoUtils {
             start(action, node);
             end(node);
         }
+
+        public void deleteAction2(Delete action, Tree node, Tree dstParent) throws IOException {
+            start(action, node);
+            writer.name("parent").value(dstParent.toString());
+            writer.name("at").value(node.getParent().getChildPosition(node));
+            end(node);
+        }
+
 
         @Override
         public void deleteTreeAction(TreeDelete action, Tree node) throws IOException {

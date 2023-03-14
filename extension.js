@@ -5,6 +5,7 @@ const path = require('node:path');
 const fs = require('fs');
 
 const CONFIG_FILE = "config.json"
+const TEMP_JSON_FILE = "input.json"
 
 const BACKEND_ERRORCODES = {
 	SUCCESS: 0,
@@ -15,22 +16,28 @@ const BACKEND_ERRORCODES = {
 	PYTHONPARSER_NOT_FOUND: 5
 }
 
+let source_editor_g = null
+let dest_editor_g = null
+let actions_json_g = null
+let extracted_offset_g = null
+let extracted_actions_g = null
+let did_prepare_actions_g = false
+
 /**
  * @param {vscode.ExtensionContext} context
  */
 function activate(context) {
-
-	// Use the console to output diagnostic information (console.log) and errors (console.error)
-	// This line of code will only be executed once when your extension is activated
 	console.log('Congratulations, your extension "gumtree-diff" is now active!')
 
 	let source_uri = null
 	let dest_uri = null
+	
+	vscode.commands.executeCommand('setContext', 'gumtree-diff.diff_displayed', false);
 
-	// The command has been defined in the package.json file
-	// Now provide the implementation of the command with  registerCommand
-	// The commandId parameter must match the command field in package.json
 	vscode.commands.registerCommand('gumtree-diff.source_select', function (uri) {
+		source_editor_g = null
+		dest_editor_g = null
+		actions_json_g = null
 		source_uri = uri
 		vscode.commands.executeCommand('setContext', 'gumtree-diff.source_selected', true);
 	});
@@ -49,6 +56,224 @@ function activate(context) {
 		dest_uri = allSelections[1]
 		handle_diff(source_uri, dest_uri)
 	});
+
+	vscode.commands.registerCommand('gumtree-diff.extract_edit_script', function() {
+		extracted_actions_g = null
+		did_prepare_actions_g = false
+		extracted_offset_g = null
+		
+		const editor = vscode.window.activeTextEditor
+		let is_src = is_src_editor(editor)
+		if (is_src === null) {
+			return
+		}
+
+		let selection_range = get_selection_range(editor)
+		if (selection_range === null) {
+			return
+		}
+
+		extracted_offset_g = range_to_offset(selection_range, editor)
+		extracted_actions_g = get_actions_in_selection(extracted_offset_g, is_src)
+		vscode.commands.executeCommand('setContext', 'gumtree-diff.edit_script_extracted', true);
+	})
+
+	vscode.commands.registerCommand('gumtree-diff.apply_edit_script', function() {
+		const editor = vscode.window.activeTextEditor
+		let is_src = is_src_editor(editor)
+		if (is_src === null) {
+			return
+		}
+
+		let selection_range = get_selection_range(editor)
+		if (selection_range === null) {
+			return
+		}
+
+		let offset_to_apply = range_to_offset(selection_range, editor)
+		if (!did_prepare_actions_g) {
+			prepare_actions_json(extracted_actions_g)
+			did_prepare_actions_g = true
+		}
+		
+		let updated_actions_json = {"apply_offset": offset_to_apply, "actions": extracted_actions_g}
+		var jsonContent = JSON.stringify(updated_actions_json);
+		let json_path = path.join(__dirname, TEMP_JSON_FILE)
+		fs.writeFileSync(json_path, jsonContent, "utf-8")
+
+		let json_str = execute_backend(source_uri, dest_uri, json_path)
+		if (!json_str) {
+			vscode.window.showErrorMessage("Backend error in apply edit script")
+			return
+		}
+		let out_json = JSON.parse(json_str)
+
+		editor.edit(editBuilder => {
+			perform_edit_actions(out_json, editBuilder, editor)
+		})
+	})
+}
+
+/**
+ * @param {vscode.TextEditor} editor 
+ * @returns 
+ */
+function is_src_editor(editor) {
+	if (editor == source_editor_g) {
+		return true
+	} else if (editor == dest_editor_g) {
+		return false
+	} else {
+		vscode.window.showErrorMessage("Unrecognized editor")
+		return null
+	}
+}
+
+/**
+ * @param {vscode.TextEditor} editor 
+ * @returns 
+ */
+function get_selection_range(editor) {
+	const selection = editor.selection
+	if (selection && !selection.isEmpty) {
+		return new vscode.Range(selection.start.line, selection.start.character, selection.end.line, selection.end.character)
+	} else {
+		vscode.window.showErrorMessage("Invalid selection for edit script")
+		return null
+	}
+}
+
+/**
+ * @param {*} actions_json 
+ * @param {vscode.TextEditorEdit} builder 
+ * @param {vscode.TextEditor} editor
+ */
+function perform_edit_actions(actions_json, builder, editor) {
+	for (let i = 0 ; i < actions_json["action"].length; i++) {
+		let action = actions_json["action"][i]
+		if (action["action"] === "move-tree") {
+			perform_move(action, builder, editor)
+		}
+	}
+}
+
+/**
+ * 
+ * @param {*} action 
+ * @param {vscode.TextEditorEdit} builder 
+ * @param {vscode.TextEditor} editor
+ */
+function perform_move(action, builder, editor) {
+	let from_range = offset_to_range(action["from"][0], action["from"][1], editor)
+	let to_range = offset_to_range(action["to"][0], action["to"][1], editor)
+	const text = editor.document.getText(from_range)
+
+	// If inserting to start of line we may need to handle indentation because python
+	if (to_range.start.character == 0) {
+		let start_of_prev_line = new vscode.Position(to_range.start.line - 1, 0)
+		let end_of_prev_line = new vscode.Position(to_range.start.line - 1, 1000) // there's no easy way to get the whole line, so 1000
+		const previous_line = editor.document.getText(new vscode.Range(start_of_prev_line, end_of_prev_line))
+
+		let indentation = 0
+		for (let i = 0; i < previous_line.length; i++) {
+			if (previous_line[i] !== ' ') { // tabs not supported
+				break
+			}
+			indentation++
+		}
+
+		builder.insert(to_range.start, " ".repeat(indentation) + text)
+	} else {
+		builder.insert(to_range.start, text)
+	}
+	
+	// If the part that was moved is a whole indented line, delete the indentation as well
+	if (from_range.start.character != 0) {
+		let from_line = new vscode.Position(from_range.start.line, 0)
+		const start_of_modified_line = editor.document.getText(new vscode.Range(from_line, from_range.start))
+
+		let should_delete_indentation = true
+		for (let i = 0; i < start_of_modified_line.length; i++) {
+			if (start_of_modified_line[i] !== ' ') {
+				should_delete_indentation = false
+				break
+			}
+		}
+		if (should_delete_indentation) {
+			builder.delete(new vscode.Range(from_line, from_range.end))
+		} else {
+			builder.delete(from_range)
+		}
+	} else {
+		builder.delete(from_range)
+	}
+}
+
+function prepare_actions_json(input_json) {
+	let output = input_json
+	for (var i = 0; i < input_json.length; i++) {
+		var action = input_json[i]
+		if (action["action"] === "insert-node" || action["action"] === "delete-node") {
+			let parent_offsets = match_range_from_json_action(action, "parent")
+			let tree_offsets = match_range_from_json_action(action, "tree")				
+			output[i]["parent"] = {string: action["parent"], range: parent_offsets}
+			output[i]["tree"] = {string: action["tree"], range: tree_offsets}
+
+		} else if (action["action"] === "move-tree") {
+			let parent_offsets = match_range_from_json_action(action, "parent")
+			let tree_offsets = match_range_from_json_action(action, "tree")				
+			output[i]["parent"] = {string: action["parent"], range: parent_offsets}
+			output[i]["tree"] = {string: action["tree"], range: tree_offsets}
+			let to_offsets = match_range_from_json_action(action, "to")
+			output[i]["to"] = {string: action["to"], range: to_offsets}
+
+		} else if (action["action"] === "update-node") {
+			let tree_offsets = match_range_from_json_action(action, "tree")
+			output[i]["tree"] = {string: action["tree"], range: tree_offsets}
+			let to_offsets = match_range_from_json_action(action, "to")
+			output[i]["to"] = {string: action["to"], range: to_offsets}
+		}
+	}
+	return output
+}
+
+/**
+ * 
+ * @param {[number, number]} extracted_offset 
+ * @param {boolean} is_src
+ * @returns
+ */
+function get_actions_in_selection(extracted_offset, is_src) {
+	let actions_in_selection = []
+	for (var i = 0; i < actions_json_g.actions.length; i++) {
+		var action = actions_json_g.actions[i]
+		let action_str = action["action"]
+		let action_range
+		if (is_src) {
+			if (action_str === "insert-tree" || action_str === "insert-node") {
+				continue
+			}
+			action_range = match_range_from_json_action(action, "tree")
+		} else {
+			if (action_str === "delete-tree") { // TODO: implement?
+				continue
+			} else if (action_str === "delete-node") {
+				action_range = match_range_from_json_action(action, "parent")
+			} else if (action_str === "insert-tree" || action_str === "insert-node") {
+				action_range = match_range_from_json_action(action, "tree")
+			} else if (action_str === "move-tree" || action_str === "update-node") {
+				action_range = match_range_from_json_action(action, "to")
+			} else {
+				continue
+			}
+		}
+		
+		if (extracted_offset[0] <= action_range[0] && action_range[1] <= extracted_offset[1]) { // action is in range
+			actions_in_selection.push(action)
+		}
+	}
+
+	return actions_in_selection
 }
 
 /**
@@ -56,18 +281,21 @@ function activate(context) {
  * @param {vscode.Uri} dest_uri 
  */
 function handle_diff(source_uri, dest_uri) {
-	let json_str = execute_backend(source_uri, dest_uri)
+	let json_str = execute_backend(source_uri, dest_uri, null)
 	if (!json_str) {
 		source_uri = null
 		vscode.commands.executeCommand('setContext', 'gumtree-diff.source_selected', false);
 		return
 	}
 	let out_json = JSON.parse(json_str)
+	actions_json_g = out_json
 
 	vscode.workspace.openTextDocument(source_uri).then(src_doc => {
 		vscode.window.showTextDocument(src_doc).then(src_editor => {
 			vscode.workspace.openTextDocument(dest_uri).then(dest_doc => {
 				vscode.window.showTextDocument(dest_doc, {viewColumn: vscode.ViewColumn.Beside}).then(dest_editor => {
+					source_editor_g = src_editor
+					dest_editor_g = dest_editor
 					let actions_and_ranges = get_actions_and_ranges(out_json, src_editor, dest_editor)
 					decorate_actions(actions_and_ranges, src_editor, dest_editor)
 				})
@@ -77,6 +305,7 @@ function handle_diff(source_uri, dest_uri) {
 
 	source_uri = null
 	vscode.commands.executeCommand('setContext', 'gumtree-diff.source_selected', false);
+	vscode.commands.executeCommand('setContext', 'gumtree-diff.diff_displayed', true);
 }
 
 /**
@@ -91,9 +320,10 @@ function get_pythonparser() {
 /**
  * @param {vscode.Uri} source_uri 
  * @param {vscode.Uri} dest_uri 
+ * @param {string} input_file
  * @returns
  */
-function execute_backend(source_uri, dest_uri) {
+function execute_backend(source_uri, dest_uri, input_file) {
 	let is_windows = process.platform === "win32";
 
 	let path_delimiter = is_windows ? ";" : ":"
@@ -104,7 +334,12 @@ function execute_backend(source_uri, dest_uri) {
 
 	let java_exec = is_windows ? "java.exe" : "java"
 	let pythonparser = get_pythonparser()
-	let command = `${java_exec} -cp ${classpath} com.github.gumtreediff.client.Run "${source_uri.fsPath}" "${dest_uri.fsPath}" "${pythonparser}"`
+	let command
+	if (input_file !== null) {
+		command = `${java_exec} -cp ${classpath} com.github.gumtreediff.client.Run "${source_uri.fsPath}" "${dest_uri.fsPath}" "${pythonparser}" "${input_file}"`
+	} else {
+		command = `${java_exec} -cp ${classpath} com.github.gumtreediff.client.Run "${source_uri.fsPath}" "${dest_uri.fsPath}" "${pythonparser}"`
+	}
 	
 	let json_str = ""
 	try {
@@ -237,6 +472,29 @@ function offset_to_range(range_base, range_end, editor) {
 
 	return new vscode.Range(new vscode.Position(source_line, source_offset_in_line), 
 							new vscode.Position(dest_line, dest_offset_in_line))
+}
+
+/**
+ * 
+ * @param {vscode.Range} range
+ * @param {vscode.TextEditor} editor
+ * @returns {[number, number]}
+ */
+function range_to_offset(range, editor) {
+	let is_crlf = editor.document.eol === vscode.EndOfLine.CRLF
+
+	const till_start_position = editor.document.getText(new vscode.Range(0, 0, range.start.line, range.start.character))
+	const till_end_position = editor.document.getText(new vscode.Range(0, 0, range.end.line, range.end.character))
+	let start_offset = till_start_position.length
+	let end_offset = till_end_position.length
+
+	if (is_crlf) {
+		// removing 1 per line, for each \r
+		start_offset -= range.start.line
+		end_offset -= range.end.line
+	}
+
+	return [start_offset, end_offset]
 }
 
 /**

@@ -21,6 +21,7 @@
 package com.github.gumtreediff.client;
 
 import com.github.gumtreediff.actions.*;
+import com.github.gumtreediff.edit.ApplyEdit;
 import com.github.gumtreediff.gen.SyntaxException;
 import com.github.gumtreediff.gen.TreeGenerators;
 import com.github.gumtreediff.gen.python.PythonTreeGenerator;
@@ -34,10 +35,9 @@ import com.github.gumtreediff.tree.TreeContext;
 import com.github.gumtreediff.gen.TreeGenerator;
 import org.atteo.classindex.ClassIndex;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOError;
-import java.io.IOException;
+import org.json.JSONObject;
+import java.io.*;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.NoSuchFileException;
 import java.util.Arrays;
@@ -153,6 +153,12 @@ public class Run {
             System.exit(ErrorCodes.SYNTAX_ERROR_DST.ordinal());
         }
 
+        if (args.length == 4) {
+            var applier = new ApplyEdit();
+            JSONObject new_actions = applier.apply_edit_script(args[3], dst.getRoot());
+            System.out.print(new_actions.toString());
+            return;
+        }
 //        Matcher defaultMatcher = Matchers.getInstance().getMatcher(); // retrieves the default matcher
 //        MappingStore mappings = defaultMatcher.match(src.getRoot(), dst.getRoot()); // computes the mappings between the trees
         /* original */
