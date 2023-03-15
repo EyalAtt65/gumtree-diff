@@ -69,30 +69,6 @@ public class Run {
             };
         }
     }
-//    public static void initGenerators() {
-//        ClassIndex.getSubclasses(TreeGenerator.class).forEach(
-//                gen -> {
-//                    com.github.gumtreediff.gen.Register a =
-//                            gen.getAnnotation(com.github.gumtreediff.gen.Register.class);
-//                    if (a != null)
-//                        TreeGenerators.getInstance().install(gen, a);
-//                });
-//    }
-//
-//    public static void initMatchers() {
-//        ClassIndex.getSubclasses(Matcher.class).forEach(
-//                gen -> {
-//                    com.github.gumtreediff.matchers.Register a =
-//                            gen.getAnnotation(com.github.gumtreediff.matchers.Register.class);
-//                    if (a != null)
-//                        Matchers.getInstance().install(gen, a);
-//                });
-//    }
-//
-//    static {
-//        initGenerators();
-//        initMatchers();
-//    }
 
     private static void assert_mappings(MappingStore mappings, MappingStore orig_mappings) {
         int counter0 = 0;
@@ -119,14 +95,6 @@ public class Run {
     }
 
 
-//    public void run_tests() {
-//        File tests_dir = new File("tests");
-//        Arrays.stream(tests_dir.listFiles()).sorted()
-//        for (File f : tests_dir.listFiles()) {
-//
-//        }
-//    }
-
     public static void main(String[] origArgs) throws IOException, Exception, FileNotFoundException {
         Options opts = new Options();
         TreeContext src = null, dst = null;
@@ -134,6 +102,7 @@ public class Run {
         String[] args = Option.processCommandLine(origArgs, opts);
         try {
             src = new PythonTreeGenerator(args[2]).generateFrom().file(args[0]);
+
         } catch (InvalidPathException e) {
             System.exit(ErrorCodes.INVALID_PATH_SRC.ordinal());
         } catch (NoSuchFileException e) {
@@ -159,8 +128,7 @@ public class Run {
             System.out.print(new_actions.toString());
             return;
         }
-//        Matcher defaultMatcher = Matchers.getInstance().getMatcher(); // retrieves the default matcher
-//        MappingStore mappings = defaultMatcher.match(src.getRoot(), dst.getRoot()); // computes the mappings between the trees
+
         /* original */
 //        Matcher greedy_subtree = new GreedySubtreeMatcher();
 //        MappingStore orig_td_mappings = greedy_subtree.match(src.getRoot(), dst.getRoot());
