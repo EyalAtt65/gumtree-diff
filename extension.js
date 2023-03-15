@@ -108,9 +108,7 @@ function activate(context) {
 		}
 		let out_json = JSON.parse(json_str)
 
-		editor.edit(editBuilder => {
-			perform_edit_actions(out_json, editBuilder, editor)
-		})
+		perform_edit_actions(out_json, editor)
 	})
 }
 
@@ -145,35 +143,68 @@ function get_selection_range(editor) {
 
 /**
  * @param {*} actions_json 
- * @param {vscode.TextEditorEdit} builder 
  * @param {vscode.TextEditor} editor
  */
-function perform_edit_actions(actions_json, builder, editor) {
+function perform_edit_actions(actions_json, editor) {
+	let edit_actions = []
 	for (let i = 0 ; i < actions_json["action"].length; i++) {
 		let action = actions_json["action"][i]
-		if (action["action"] === "move-tree") {
-			perform_move(action, builder, editor)
+		let action_str = action["action"]
+		if (action_str === "move-tree") {
+			let output = perform_move(action, editor)
+			for (let j = 0; j < output.length; j++) {
+				edit_actions.push(output[j])
+			}
+			
+		} else if (action_str === "insert-node") {
+			let output = perform_insert(action, editor)
+			for (let j = 0; j < output.length; j++) {
+				edit_actions.push(output[j])
+			}
 		}
 	}
+
+	editor.edit(editBuilder => {
+		for (let i = 0; i < edit_actions.length; i++) {
+			let edit = edit_actions[i]
+			if (edit["type"] === "insert") {
+				editBuilder.insert(edit["pos"], edit["text"])
+			} else if (edit["type"] === "delete") {
+				editBuilder.delete(edit["range"])
+			}
+		}
+	})
 }
 
 /**
- * 
  * @param {*} action 
- * @param {vscode.TextEditorEdit} builder 
+ * @param {vscode.TextEditor} editor
+ * @returns
+ */
+function perform_insert(action, editor) {
+	let to_range = offset_to_range(action["to"][0], action["to"][1], editor)
+	// Adding whitespace for readability
+	return [{type: "insert", text: action["label"] + " ", pos: to_range.start}]
+}
+
+/**
+ * @param {*} action 
  * @param {vscode.TextEditor} editor
  */
-function perform_move(action, builder, editor) {
+function perform_move(action, editor) {
 	let from_range = offset_to_range(action["from"][0], action["from"][1], editor)
 	let to_range = offset_to_range(action["to"][0], action["to"][1], editor)
+	let output = []
+
 	const text = editor.document.getText(from_range)
 
-	// If inserting to start of line we may need to handle indentation because python
+	// If inserting to start of line we may need to add indentation because python
 	if (to_range.start.character == 0) {
 		let start_of_prev_line = new vscode.Position(to_range.start.line - 1, 0)
 		let end_of_prev_line = new vscode.Position(to_range.start.line - 1, 1000) // there's no easy way to get the whole line, so 1000
 		const previous_line = editor.document.getText(new vscode.Range(start_of_prev_line, end_of_prev_line))
 
+		// if previous line was indented, match the same indentation (this is a heuristic)
 		let indentation = 0
 		for (let i = 0; i < previous_line.length; i++) {
 			if (previous_line[i] !== ' ') { // tabs not supported
@@ -181,13 +212,13 @@ function perform_move(action, builder, editor) {
 			}
 			indentation++
 		}
-
-		builder.insert(to_range.start, " ".repeat(indentation) + text)
+		output.push({type: "insert", text: " ".repeat(indentation) + text, pos: to_range.start})
 	} else {
-		builder.insert(to_range.start, text)
+		output.push({type: "insert", text: text, pos: to_range.start})
 	}
 	
 	// If the part that was moved is a whole indented line, delete the indentation as well
+	// TODO: should check if we indeed delete till end of line
 	if (from_range.start.character != 0) {
 		let from_line = new vscode.Position(from_range.start.line, 0)
 		const start_of_modified_line = editor.document.getText(new vscode.Range(from_line, from_range.start))
@@ -199,27 +230,35 @@ function perform_move(action, builder, editor) {
 				break
 			}
 		}
+
 		if (should_delete_indentation) {
-			builder.delete(new vscode.Range(from_line, from_range.end))
+			output.push({type: "delete", range: new vscode.Range(from_line, from_range.end)})
 		} else {
-			builder.delete(from_range)
+			output.push({type: "delete", range: from_range})
 		}
+
 	} else {
-		builder.delete(from_range)
+		output.push({type: "delete", range: from_range})
 	}
+	return output
 }
 
 function prepare_actions_json(input_json) {
 	let output = input_json
 	for (var i = 0; i < input_json.length; i++) {
 		var action = input_json[i]
-		if (action["action"] === "insert-node" || action["action"] === "delete-node") {
+		const action_str = action["action"]
+		if (action_str === "insert-node" || action_str === "insert-tree") {
 			let parent_offsets = match_range_from_json_action(action, "parent")
 			let tree_offsets = match_range_from_json_action(action, "tree")				
 			output[i]["parent"] = {string: action["parent"], range: parent_offsets}
 			output[i]["tree"] = {string: action["tree"], range: tree_offsets}
 
-		} else if (action["action"] === "move-tree") {
+		} else if (action_str === "delete-node") {
+			let tree_offsets = match_range_from_json_action(action, "tree")	
+			output[i]["tree"] = {string: action["tree"], range: tree_offsets}
+
+		} else if (action_str === "move-tree") {
 			let parent_offsets = match_range_from_json_action(action, "parent")
 			let tree_offsets = match_range_from_json_action(action, "tree")				
 			output[i]["parent"] = {string: action["parent"], range: parent_offsets}
@@ -227,7 +266,7 @@ function prepare_actions_json(input_json) {
 			let to_offsets = match_range_from_json_action(action, "to")
 			output[i]["to"] = {string: action["to"], range: to_offsets}
 
-		} else if (action["action"] === "update-node") {
+		} else if (action_str === "update-node") {
 			let tree_offsets = match_range_from_json_action(action, "tree")
 			output[i]["tree"] = {string: action["tree"], range: tree_offsets}
 			let to_offsets = match_range_from_json_action(action, "to")
@@ -251,14 +290,23 @@ function get_actions_in_selection(extracted_offset, is_src) {
 		let action_range
 		if (is_src) {
 			if (action_str === "insert-tree" || action_str === "insert-node") {
+				action_range = match_range_from_json_action(action, "parent")
+				if (extracted_offset[0] <= action_range[0] && action_range[0] <= extracted_offset[1]) {
+					actions_in_selection.push(action)
+				}
 				continue
+			} else if (action_str === "delete-node") {
+				action_range = match_range_from_json_action(action, "tree")
+			} else if (action_str === "move-tree") {
+				action_range = match_range_from_json_action(action, "tree")
+			} else {
+				continue // TODO: update and delete-tree
 			}
-			action_range = match_range_from_json_action(action, "tree")
 		} else {
 			if (action_str === "delete-tree") { // TODO: implement?
 				continue
 			} else if (action_str === "delete-node") {
-				action_range = match_range_from_json_action(action, "parent")
+				action_range = match_range_from_json_action(action, "tree") // TODO: this is wrong because tree range relates to source file
 			} else if (action_str === "insert-tree" || action_str === "insert-node") {
 				action_range = match_range_from_json_action(action, "tree")
 			} else if (action_str === "move-tree" || action_str === "update-node") {
@@ -615,9 +663,9 @@ function decorate_actions(actions, src_editor, dst_editor) {
 				src_range = action["ranges"][0]
 				dst_range = action["ranges"][1]
 				srcYellowArray.push({range: src_range,
-					hoverMessage: `Label was updated to *${action["labels"][1]}* in the destination file`})
+					hoverMessage: `Label was updated to *${action["labels"][1].replace("*", "\\*")}* in the destination file`})
 				dstYellowArray.push({range: dst_range,
-					hoverMessage: `Label was updated from *${action["labels"][0]}* in the source file`})
+					hoverMessage: `Label was updated from *${action["labels"][0].replace("*", "\\*")}* in the source file`})
 				break
 		}
 	}

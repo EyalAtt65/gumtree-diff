@@ -117,7 +117,8 @@ public final class ActionsIoUtils {
                     else
                         fmt.insertAction((Insert) a, src, dst.getParent(), dst.getParent().getChildPosition(dst));
                 } else if (a instanceof Delete) {
-                    fmt.deleteAction2((Delete) a, src, mappings.getDstForSrc(src.getParent()));
+//                    fmt.deleteAction2((Delete) a, src, mappings.getDstForSrc(src.getParent()));
+                    fmt.deleteAction((Delete) a, src);
                 } else if (a instanceof TreeInsert) {
                     Tree dst = a.getNode();
                     fmt.insertTreeAction((TreeInsert) a, src, dst.getParent(), dst.getParent().getChildPosition(dst));

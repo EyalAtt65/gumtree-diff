@@ -53,7 +53,8 @@ public class ApplyEdit {
             if (target_child_idx == 0) { // no children
                 target_pos = node.getParent().getPos();
             } else { // adding new child
-                target_pos = node.getParent().getChild(target_child_idx - 1).getEndPos();
+                int last_child_idx = node.getParent().getChildren().size() - 1;
+                target_pos = node.getParent().getChild(last_child_idx).getEndPos();
             }
         }
 
@@ -64,7 +65,7 @@ public class ApplyEdit {
         from_range.put(node.getPos());
         from_range.put(node.getEndPos());
         to_range.put(target_pos);
-        to_range.put(target_pos + node.getLength() + 1);
+        to_range.put(target_pos + node.getLength());
         new_action.put("from", from_range);
         new_action.put("to", to_range);
 
@@ -72,7 +73,12 @@ public class ApplyEdit {
     }
 
     private JSONObject handle_insert(JSONObject action, Tree parent) {
+        String label = action.getString("label");
+        if (label.isEmpty()) {
+            return null;
+        }
         JSONObject new_action = new JSONObject();
+        new_action.put("action", "insert-node");
         JSONArray to_range = new JSONArray();
         int child_idx = action.getInt("at");
         int start_pos = -1;
@@ -85,7 +91,6 @@ public class ApplyEdit {
                 start_pos = parent.getChild(child_idx - 1).getEndPos();
             }
         }
-        String label = action.getString("label");
         new_action.put("label", label);
         to_range.put(start_pos);
         to_range.put(start_pos + label.length());
@@ -120,15 +125,24 @@ public class ApplyEdit {
                 continue;
             }
 
-            int[] int_range = get_int_array(action);
-            int relevant_index = get_range_index(ranges, int_range);
-            Tree relevant_node = trees.get(relevant_index + 1); // TODO: assuming first is parent node
-
             JSONObject new_action;
             if (action_str.equals("move-tree")) {
+                int[] int_range = get_int_array(action);
+                int relevant_index = get_range_index(ranges, int_range);
+                if (relevant_index == -1) {
+                    continue;
+                }
+                Tree relevant_node = trees.get(relevant_index + 1); // TODO: assuming first is parent node
+
                 new_action = handle_move(action, relevant_node);
+                if (new_action == null) {
+                    continue;
+                }
             } else if (action_str.equals("insert-node")) {
                 new_action = handle_insert(action, trees.get(0));
+                if (new_action == null) {
+                    continue;
+                }
             } else { // TODO
                 continue;
             }
