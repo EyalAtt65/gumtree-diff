@@ -1,7 +1,19 @@
-#!/usr/bin/env python3
-import os
-import sys
-assert(len(sys.argv) == 2)
-if True:
-    os.system("sbatch " + sys.argv[1])
-os.system("squeue -p gpua100")
+"""
+Docstring
+"""
+
+import math
+
+MIN_VALUE = 10.0
+
+def foo(x):
+    if (x > MIN_VALUE):
+        for i in range(5):
+            x = math.sqrt(x / 2.0)
+            y = x + 1
+    if (x < 7):
+        print("success")
+        x += 1
+        
+    return x
+

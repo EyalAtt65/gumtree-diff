@@ -1,7 +1,5 @@
 def foo(x: int):
-	if (x > 5):
-		print("hello")
-
+    return x * 5
 
 def main():
-	foo()
+    foo()

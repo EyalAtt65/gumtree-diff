@@ -1,9 +1,8 @@
 def foo(x: int):
-	if (x > 5):
-		print("hello")
-
-	elif (x > 3):
-		print("bye")
+    if (x > 5):
+        print("hello")
+    else:
+        print("bye")
 
 def main():
-	foo()
+    foo()

@@ -9,7 +9,7 @@ import java.util.*;
 
 public class TopDownMapper extends AbstractMapper {
     /** This is zero-based. Note that in the paper they use height that is one-based. */
-    private final int MIN_HEIGHT = 1;
+    private final int MIN_HEIGHT = 0; // using higher values misses matches
     public TopDownMapper(Tree src, Tree dst) {
         this.src = src;
         this.dst = dst;
@@ -126,7 +126,7 @@ public class TopDownMapper extends AbstractMapper {
         dst_pq.add(dst);
 
         while (src_pq.size() > 0 && dst_pq.size() > 0 &&
-                Math.min(src_pq.peek_max(), dst_pq.peek_max()) > this.MIN_HEIGHT -2) {
+                Math.min(src_pq.peek_max(), dst_pq.peek_max()) > this.MIN_HEIGHT - 1) {
             if (src_pq.peek_max() != dst_pq.peek_max()) {
                 if (src_pq.peek_max() > dst_pq.peek_max()) {
                     ArrayList<Tree> popped = src_pq.pop_list();

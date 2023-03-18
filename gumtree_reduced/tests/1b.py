@@ -1,6 +1,6 @@
 def foo(x: int):
 	if (x > 3):
-		print("hello")
+		print("something else")
 	else:
 		print("bye")
 

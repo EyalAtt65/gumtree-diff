@@ -1,17 +1,17 @@
-"""
-Docstring
-"""
+#!/usr/bin/env python3
 
-import math
+MAX_VALUE = 100
 
-def foo(x):
-    if ("1" == x):
-        for i in range(5):
-            y = x + 1
-            x = math.sqrt(x / 2.0)
-    if (x < 7):
-        print("success")
-        x += 1
+def foo(number):
+    counter = 0
+    for i in range(number):
+        counter += 1
+        x = counter * 2
+        print("Value is %d" % x)
 
-    return x
+        if (x > MAX_VALUE):
+            y = MAX_VALUE
+        else:
+            y = x
 
+        print(y)

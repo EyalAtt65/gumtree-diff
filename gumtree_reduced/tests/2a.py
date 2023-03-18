@@ -1,8 +1,8 @@
 def foo(x: int):
 	if (x > 5):
 		print("hello")
-	else:
-		print("bye")
+		exit(0)
+	
 
 def main():
 	foo()

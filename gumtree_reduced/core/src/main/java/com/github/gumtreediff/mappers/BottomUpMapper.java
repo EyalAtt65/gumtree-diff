@@ -3,7 +3,7 @@ package com.github.gumtreediff.mappers;
 import com.github.gumtreediff.matchers.Mapping;
 import com.github.gumtreediff.matchers.MappingStore;
 import com.github.gumtreediff.matchers.optimal.rted.RtedMatcher;
-import com.github.gumtreediff.matchers.optimal.zs.ZsMatcher;
+//import com.github.gumtreediff.matchers.optimal.zs.ZsMatcher;
 import com.github.gumtreediff.tree.Tree;
 import com.github.gumtreediff.utils.Pair;
 
@@ -76,10 +76,6 @@ public class BottomUpMapper extends AbstractMapper {
                     if (Math.max(t1.getMetrics().size, candidate.getMetrics().size) < MAX_TREE_SIZE) {
                         RtedMatcher rted = new RtedMatcher();
                         MappingStore opt_mappings = rted.match(t1, candidate, new MappingStore(t1, candidate));
-                        /* TODO: paper uses RTED but gumtree uses Zs. Leaving this commented out in case we ever
-                         *   want to experiment with Zs. */
-//                        ZsMatcher zs = new ZsMatcher();
-//                        MappingStore opt_mappings = zs.match(t1, candidate, new MappingStore(t1, candidate));
 
                         for (Mapping m : opt_mappings) {
                             if (mappings.has(m.first, m.second)) {

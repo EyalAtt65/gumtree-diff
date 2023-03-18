@@ -36,13 +36,6 @@ public class ApplyEdit {
         return index;
     }
 
-    private boolean should_ignore_action(String action_str) {
-        // TODO: decide about delete-tree
-        return (action_str.equals("delete-tree") || // currently not supported
-                action_str.equals("insert-node") || // irrelevant
-                action_str.equals("insert-tree")); // irrelevant
-    }
-
     private JSONObject handle_move(JSONObject action, Tree node) {
         int target_child_idx = action.getInt("at"); // node will be moved to be this child index in parent
         int target_pos;
@@ -97,12 +90,43 @@ public class ApplyEdit {
         return new_action;
     }
 
+    private JSONObject handle_delete(JSONObject action, Tree node) {
+        JSONObject new_action = new JSONObject();
+        new_action.put("action", "delete-node");
+        JSONArray tree_range = new JSONArray();
+        int start_pos = node.getPos();
+        int end_pos = node.getEndPos();
+        tree_range.put(start_pos);
+        tree_range.put(end_pos);
+        new_action.put("tree", tree_range);
+        return new_action;
+    }
+
+    private JSONObject handle_update(JSONObject action, Tree node) {
+        String label = action.getString("label");
+        if (label.isEmpty()) {
+            return null;
+        }
+        JSONObject new_action = new JSONObject();
+        new_action.put("action", "update-node");
+        JSONArray tree_range = new JSONArray();
+        int start_pos = node.getPos();
+        int end_pos = node.getEndPos();
+        tree_range.put(start_pos);
+        tree_range.put(end_pos);
+        new_action.put("tree", tree_range);
+        new_action.put("label", label);
+        return new_action;
+    }
+
+
     private List<int[]> get_action_ranges(JSONArray actions) {
         List<int[]> ranges = new ArrayList<>();
         for (int i = 0; i < actions.length(); i++) {
             JSONObject action = actions.getJSONObject(i);
             String action_str = action.getString("action");
-            if (should_ignore_action(action_str)) {
+            // getting ranges of actions applied to existing nodes
+            if (action_str.equals("insert-node") || action_str.equals("insert-tree")) {
                 continue;
             }
             int[] int_range = get_int_array(action);
@@ -113,25 +137,49 @@ public class ApplyEdit {
         return ranges;
     }
 
+    private Tree get_relevant_node(JSONObject action, List<int[]> ranges, List<Tree> trees) {
+        int[] int_range = get_int_array(action);
+        int relevant_index = get_range_index(ranges, int_range);
+        if (relevant_index == -1) {
+            return null;
+        }
+        try {
+            return trees.get(relevant_index + 1);
+        } catch (IndexOutOfBoundsException e) {
+            return null;
+        }
+    }
+
     private JSONObject generate_new_actions(JSONArray actions, List<int[]> ranges, List<Tree> trees) {
         JSONObject new_actions = new JSONObject();
         JSONArray new_actions_array = new JSONArray();
+        JSONArray delete_actions_array = new JSONArray();
 
         for (int i = 0; i < actions.length(); i++) {
             JSONObject action = actions.getJSONObject(i);
             String action_str = action.getString("action");
-            if (action_str.equals("delete-tree")) { // TODO
-                continue;
+            if (action_str.equals("delete-tree") || action_str.equals("delete-node")) {
+                Tree relevant_node = get_relevant_node(action, ranges, trees);
+                if (relevant_node == null) {
+                    continue;
+                }
+                JSONObject delete = handle_delete(action, relevant_node);
+                delete_actions_array.put(delete);
+            } else if (action_str.equals("update-node")) {
+                Tree relevant_node = get_relevant_node(action, ranges, trees);
+                if (relevant_node == null) {
+                    continue;
+                }
+                JSONObject update = handle_update(action, relevant_node);
+                delete_actions_array.put(update);
             }
 
             JSONObject new_action;
             if (action_str.equals("move-tree")) {
-                int[] int_range = get_int_array(action);
-                int relevant_index = get_range_index(ranges, int_range);
-                if (relevant_index == -1) {
+                Tree relevant_node = get_relevant_node(action, ranges, trees);
+                if (relevant_node == null) {
                     continue;
                 }
-                Tree relevant_node = trees.get(relevant_index + 1); // TODO: assuming first is parent node
 
                 new_action = handle_move(action, relevant_node);
                 if (new_action == null) {
@@ -142,13 +190,14 @@ public class ApplyEdit {
                 if (new_action == null) {
                     continue;
                 }
-            } else { // TODO
+            } else {
                 continue;
             }
             new_actions_array.put(new_action);
         }
 
         new_actions.put("action", new_actions_array);
+        new_actions.put("delete", delete_actions_array);
         return new_actions;
     }
     public JSONObject apply_edit_script(String json_path, Tree t) throws IOException {
