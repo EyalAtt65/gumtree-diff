@@ -142,24 +142,49 @@ function get_selection_range(editor) {
 }
 
 /**
+ * 
+ * @param {any[]} output 
+ * @param {any[]} edit_actions 
+ */
+function handle_performed_action(output, edit_actions) {
+	if (output.length == 0) {
+		return false
+	}
+	for (let j = 0; j < output.length; j++) {
+		edit_actions.push(output[j])
+	}
+	return true
+}
+
+/**
  * @param {*} actions_json 
  * @param {vscode.TextEditor} editor
  */
 function perform_edit_actions(actions_json, editor) {
 	let edit_actions = []
+	if (actions_json["action"].length == 0) {
+		vscode.window.showErrorMessage("Application of edit script was not successful.")
+		return
+	}
+
 	for (let i = 0 ; i < actions_json["action"].length; i++) {
 		let action = actions_json["action"][i]
 		let action_str = action["action"]
 		if (action_str === "move-tree") {
-			let output = perform_move(action, editor)
-			for (let j = 0; j < output.length; j++) {
-				edit_actions.push(output[j])
+			if (!handle_performed_action(perform_move(action, editor), edit_actions)) {
+				return
 			}
-			
-		} else if (action_str === "insert-node") {
-			let output = perform_insert(action, editor)
-			for (let j = 0; j < output.length; j++) {
-				edit_actions.push(output[j])
+		 } else if (action_str === "insert-node") {
+			if (!handle_performed_action(perform_insert(action, editor), edit_actions)) {
+				return
+			}
+		} else if (action_str === "delete-node") {
+			if (!handle_performed_action(perform_delete(action, editor), edit_actions)) {
+				return
+			}
+		} else if (action_str === "update-node") {
+			if (!handle_performed_action(perform_update(action, editor), edit_actions)) {
+				return
 			}
 		}
 	}
@@ -173,7 +198,7 @@ function perform_edit_actions(actions_json, editor) {
 				editBuilder.delete(edit["range"])
 			}
 		}
-	})
+	}).then(success => {}, error => {vscode.window.showErrorMessage("Generated edit actions were invalid")})
 }
 
 /**
@@ -183,8 +208,45 @@ function perform_edit_actions(actions_json, editor) {
  */
 function perform_insert(action, editor) {
 	let to_range = offset_to_range(action["to"][0], action["to"][1], editor)
+	if (to_range.start.line == null || to_range.start.character == null ||
+		to_range.end.line == null || to_range.end.character == null) {
+			vscode.window.showErrorMessage("Error when generating insert action")
+			return []
+	}
 	// Adding whitespace for readability
 	return [{type: "insert", text: action["label"] + " ", pos: to_range.start}]
+}
+
+/**
+ * @param {*} action 
+ * @param {vscode.TextEditor} editor 
+ * @returns 
+ */
+function perform_delete(action, editor) {
+	let from_range = offset_to_range(action["tree"][0], action["tree"][1], editor)
+	if (from_range.start.line == null || from_range.start.character == null ||
+		from_range.end.line == null || from_range.end.character == null) {
+			vscode.window.showErrorMessage("Error when generating delete action")
+			return []
+	}
+
+	return [{type: "delete", range: from_range}]
+}
+
+/**
+ * 
+ * @param {*} action 
+ * @param {vscode.TextEditor} editor 
+ * @returns 
+ */
+function perform_update(action, editor) {
+	let from_range = offset_to_range(action["tree"][0], action["tree"][1], editor)
+	if (from_range.start.line == null || from_range.start.character == null ||
+		from_range.end.line == null || from_range.end.character == null) {
+			vscode.window.showErrorMessage("Error when generating delete action")
+			return []
+	}
+	return [{type: "delete", range: from_range}, {type: "insert", text: action["label"], pos: from_range.start}]
 }
 
 /**
@@ -194,6 +256,14 @@ function perform_insert(action, editor) {
 function perform_move(action, editor) {
 	let from_range = offset_to_range(action["from"][0], action["from"][1], editor)
 	let to_range = offset_to_range(action["to"][0], action["to"][1], editor)
+
+	if (from_range.start.line == null || from_range.start.character == null ||
+		from_range.end.line == null || from_range.end.character == null ||
+		to_range.start.line == null || to_range.start.character == null ||
+		to_range.end.line == null || to_range.end.character == null) {
+			vscode.window.showErrorMessage("Error when generating move action")
+			return []
+	}
 	let output = []
 
 	const text = editor.document.getText(from_range)
@@ -218,7 +288,6 @@ function perform_move(action, editor) {
 	}
 	
 	// If the part that was moved is a whole indented line, delete the indentation as well
-	// TODO: should check if we indeed delete till end of line
 	if (from_range.start.character != 0) {
 		let from_line = new vscode.Position(from_range.start.line, 0)
 		const start_of_modified_line = editor.document.getText(new vscode.Range(from_line, from_range.start))
@@ -295,18 +364,15 @@ function get_actions_in_selection(extracted_offset, is_src) {
 					actions_in_selection.push(action)
 				}
 				continue
-			} else if (action_str === "delete-node") {
-				action_range = match_range_from_json_action(action, "tree")
-			} else if (action_str === "move-tree") {
+			} else if (action_str === "delete-node" || action_str === "delete-tree" ||
+					   action_str === "move-tree" || action_str === "update-node") {
 				action_range = match_range_from_json_action(action, "tree")
 			} else {
-				continue // TODO: update and delete-tree
+				continue
 			}
 		} else {
-			if (action_str === "delete-tree") { // TODO: implement?
-				continue
-			} else if (action_str === "delete-node") {
-				action_range = match_range_from_json_action(action, "tree") // TODO: this is wrong because tree range relates to source file
+			if (action_str === "delete-node" || action_str === "delete-tree") {
+				action_range = match_range_from_json_action(action, "tree") 
 			} else if (action_str === "insert-tree" || action_str === "insert-node") {
 				action_range = match_range_from_json_action(action, "tree")
 			} else if (action_str === "move-tree" || action_str === "update-node") {
@@ -416,6 +482,8 @@ function handle_backend_error(error, source_uri, dest_uri) {
 		vscode.window.showErrorMessage(`Destination file ${dest_uri.fsPath} is not a valid python file`)
 	} else if (error.status == BACKEND_ERRORCODES.PYTHONPARSER_NOT_FOUND) {
 		vscode.window.showErrorMessage(`Cannot find pythonparser. ${error.stderr.toString()}`)
+	} else {
+		vscode.window.showErrorMessage(`Unexpected error from backend. errorcode ${error.status}`)
 	}
 }
 
@@ -494,16 +562,24 @@ function offset_to_range(range_base, range_end, editor) {
 	const data = editor.document.getText()
 	let is_crlf = editor.document.eol === vscode.EndOfLine.CRLF
 
-	let source_line, source_offset_in_line, dest_line, dest_offset_in_line
+	let source_line = -1, source_offset_in_line = -1, dest_line, dest_offset_in_line
 	let current_line = 0
 	let current_line_offset_in_file = 0
 	for (let i = 0; i < data.length; i++) {
 		if (i == range_base) {
 			source_line = current_line
 			source_offset_in_line = i - current_line_offset_in_file
-		} else if (i == range_end || i + 1 == data.length) {
+		} else if (i == range_end) {
 			dest_line = current_line
 			dest_offset_in_line = i - current_line_offset_in_file
+			break
+		} else if (i + 1 == data.length) {
+			if (source_line === -1) {
+				source_line = current_line
+				source_offset_in_line = range_base - current_line_offset_in_file
+			}
+			dest_line = current_line
+			dest_offset_in_line = range_end - current_line_offset_in_file
 			break
 		}
 		if (data[i] === '\n') {
@@ -594,38 +670,6 @@ function handle_overlapping_ranges(arr1, arr2) {
 
 /**
  * 
- * @param {vscode.Range[]} arr 
- * @returns
- */
-function remove_redundant_ranges(arr) {
-	let arr_out = []
-	while (arr.length > 0) {
-		let curr_range = arr.pop()
-		let should_copy = true
-		for (let i = 0; i < arr.length; i++) {
-			if (curr_range.start.isAfterOrEqual(arr[i].start) && curr_range.end.isBeforeOrEqual(arr[i].end)) {
-				should_copy = false
-				break
-			}
-		}
-		if (!should_copy) {
-			continue
-		}
-		for (let j = 0; j < arr_out.length; j++) {
-			if (curr_range.start.isAfterOrEqual(arr_out[j].start) && curr_range.end.isBeforeOrEqual(arr_out[j].end)) {
-				should_copy = false
-				break
-			}
-		}
-		if (should_copy) {
-			arr_out.push(curr_range)
-		}
-	}
-	return arr_out
-}
-
-/**
- * 
  * @param {Array.<{action: String, range: vscode.Range}|
  * {action: string, ranges: vscode.Range[]}|
  * {action: string, ranges:vscode.Range[], labels:[string, string]}>} actions 
@@ -670,14 +714,6 @@ function decorate_actions(actions, src_editor, dst_editor) {
 		}
 	}
 
-	// srcBlueArray = remove_redundant_ranges(srcBlueArray)
-	// srcYellowArray = remove_redundant_ranges(srcYellowArray)
-	// redArray = remove_redundant_ranges(redArray)
-
-	// dstBlueArray = remove_redundant_ranges(dstBlueArray)
-	// dstYellowArray = remove_redundant_ranges(dstYellowArray)
-	// greenArray = remove_redundant_ranges(greenArray)
-	
 	srcBlueArray = handle_overlapping_ranges(srcBlueArray, srcYellowArray)
 	redArray = handle_overlapping_ranges(redArray, srcYellowArray)
 	redArray = handle_overlapping_ranges(redArray, srcBlueArray)
@@ -709,9 +745,7 @@ const redType = vscode.window.createTextEditorDecorationType({
 	overviewRulerLane: vscode.OverviewRulerLane.Center,
 })
 const yellowType = vscode.window.createTextEditorDecorationType({
-	// backgroundColor: '#666600',
 	border: "solid 0.5px orange",
-	// overviewRulerColor: '#666600',
 	overviewRulerColor: 'orange',
 	overviewRulerLane: vscode.OverviewRulerLane.Left,
 	rangeBehavior: vscode.DecorationRangeBehavior.ClosedClosed
@@ -724,7 +758,6 @@ const blueType = vscode.window.createTextEditorDecorationType({
 })
 
 
-// This method is called when your extension is deactivated
 function deactivate() {}
 
 module.exports = {

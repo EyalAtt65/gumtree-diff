@@ -45,8 +45,13 @@ public class ApplyEdit {
             if (target_child_idx == 0) { // no children
                 target_pos = node.getParent().getPos();
             } else { // adding new child
-                int last_child_idx = node.getParent().getChildren().size() - 1;
-                target_pos = node.getParent().getChild(last_child_idx).getEndPos();
+                int num_children = node.getParent().getChildren().size();
+                if (num_children > 0) {
+                    int last_child_idx = num_children - 1;
+                    target_pos = node.getParent().getChild(last_child_idx).getEndPos();
+                } else {
+                    target_pos = node.getParent().getPos();
+                }
             }
         }
 
@@ -80,7 +85,13 @@ public class ApplyEdit {
             if (child_idx == 0) { // no children
                 start_pos = parent.getPos();
             } else { // adding new child
-                start_pos = parent.getChild(child_idx - 1).getEndPos();
+                int num_children = parent.getChildren().size();
+                if (num_children > 0) {
+                    int last_child_idx = num_children - 1;
+                    start_pos = parent.getChild(last_child_idx).getEndPos();
+                } else {
+                    start_pos = parent.getPos();
+                }
             }
         }
         new_action.put("label", label);
