@@ -441,10 +441,10 @@ function execute_backend(source_uri, dest_uri, input_file) {
 	let is_windows = process.platform === "win32";
 
 	let path_delimiter = is_windows ? ";" : ":"
-	let classpath = "\"".concat(path.join(__dirname, "gumtree_reduced", "client", "build", "classes", "java", "main"), path_delimiter)
-	classpath = classpath.concat(path.join(__dirname, "gumtree_reduced", "core", "build", "classes", "java", "main"), path_delimiter)
-	classpath = classpath.concat(path.join(__dirname, "gumtree_reduced", "gen.python", "build", "classes", "java", "main"), path_delimiter)
-	classpath = classpath.concat(path.join(__dirname, "gumtree_reduced", "external_jars", "*"), "\"")
+	let classpath = "\"".concat(path.join(__dirname, "gumtree_backend", "client", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(__dirname, "gumtree_backend", "core", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(__dirname, "gumtree_backend", "gen.python", "build", "classes", "java", "main"), path_delimiter)
+	classpath = classpath.concat(path.join(__dirname, "gumtree_backend", "external_jars", "*"), "\"")
 
 	let java_exec = is_windows ? "java.exe" : "java"
 	let pythonparser = get_pythonparser()
